@@ -1,0 +1,25 @@
+{
+  "name": "frame-loop-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @frameloop/web",
+    "dev:mcp": "npm run dev --workspace @frameloop/mcp",
+    "build": "npm run build --workspace @frameloop/web && npm run build --workspace @frameloop/mcp",
+    "test": "vitest run",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

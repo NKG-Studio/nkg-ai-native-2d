@@ -1,0 +1,9 @@
+# 复制为项目级 `.codex/config.toml` 后，重启 Codex。
+# 先在仓库根目录执行 `npm install && npm run build`。
+[mcp_servers.frameloop]
+command = "node"
+args = ["apps/mcp/dist/index.js"]
+cwd = "."
+startup_timeout_sec = 20
+tool_timeout_sec = 300
+default_tools_approval_mode = "writes"
