@@ -3,6 +3,7 @@ import {
   analyzeFrameTransitions,
   createSpriteLayout,
   createTightSpriteLayout,
+  detectAnchoredLoopCandidates,
   detectDuplicateFrameGroups,
   detectLoopCandidates,
   estimateDominantPeriods,
@@ -53,6 +54,29 @@ describe('detectLoopCandidates', () => {
     const candidate = detectLoopCandidates(frames, { minFrames: 9, maxFrames: 9, topK: 1 })[0]
     expect(candidate?.suggestsDropLastFrame).toBe(true)
     expect(candidate?.diagnostics.duplicatePenalty).toBeGreaterThan(0.5)
+  })
+})
+
+describe('detectAnchoredLoopCandidates', () => {
+  it('keeps the action start fixed and prefers the earliest complete period', () => {
+    const period = 8
+    const frames = Array.from({ length: 25 }, (_, index) => feature(index, (index % period) / period))
+    const candidates = detectAnchoredLoopCandidates(frames, { minFrames: 6, maxFrames: 18, topK: 4 })
+    expect(candidates[0]?.startFrame).toBe(0)
+    expect(candidates[0]?.frameCount).toBe(period)
+    expect(candidates.at(-1)?.endFrame).toBe(17)
+    expect(candidates.every((candidate) => candidate.startFrame === 0)).toBe(true)
+  })
+
+  it('detects a low-contrast hard cut relative to quiet neighboring motion', () => {
+    const frames = Array.from({ length: 40 }, (_, index) => {
+      const item = feature(index, 0)
+      const value = index < 20 ? 0.1 : 0.145
+      return { ...item, luma: [value, value, value], edges: [0.1, 0.1] }
+    })
+    const transitions = analyzeFrameTransitions(frames)
+    expect(transitions.find((item) => item.frame === 20)?.isSceneCut).toBe(true)
+    expect(transitions.filter((item) => item.isSceneCut).map((item) => item.frame)).toEqual([20])
   })
 })
 

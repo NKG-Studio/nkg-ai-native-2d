@@ -7,3 +7,5 @@ coverage/
 .DS_Store
 tmp/
 outputs/
+artifacts/action-export-test/
+artifacts/action-review-*/

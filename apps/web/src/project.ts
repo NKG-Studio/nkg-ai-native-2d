@@ -23,7 +23,9 @@ export interface ProjectSnapshot {
   source: ProjectSource
   capture: {
     fps: number
-    maxFrames: number
+    analysisWindowSeconds?: number
+    /** 旧版项目字段，仅用于迁移。 */
+    maxFrames?: number
     minLoopFrames: number
   }
   editor: FrameEditorSnapshot
@@ -66,7 +68,8 @@ export function isProjectSnapshot(value: unknown): value is ProjectSnapshot {
   const project = value as Partial<ProjectSnapshot>
   if (project.schemaVersion !== PROJECT_SCHEMA_VERSION || typeof project.savedAt !== 'string') return false
   if (!project.source || !['demo', 'video'].includes(project.source.kind)) return false
-  if (!project.capture || !Number.isFinite(project.capture.fps) || !Number.isFinite(project.capture.maxFrames)) return false
+  if (!project.capture || !Number.isFinite(project.capture.fps) || !Number.isFinite(project.capture.minLoopFrames)) return false
+  if (!Number.isFinite(project.capture.analysisWindowSeconds) && !Number.isFinite(project.capture.maxFrames)) return false
   if (!project.editor || !Array.isArray(project.editor.order) || !Array.isArray(project.editor.hidden)) return false
   if (!project.loop || !Number.isFinite(project.loop.startFrame) || !Number.isFinite(project.loop.endFrame)) return false
   if (!project.matte || !['original', 'chroma', 'ai'].includes(project.matte.mode)) return false

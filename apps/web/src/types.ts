@@ -8,6 +8,7 @@ export interface CapturedFrame {
   feature: FrameFeature
 }
 export interface ExtractionProgress {
+  phase?: 'scanning' | 'capturing'
   current: number
   total: number
 }

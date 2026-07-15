@@ -90,17 +90,29 @@ export function analyzeFrameTransitions(
   sceneCutThreshold?: number,
 ): FrameTransitionMetric[] {
   const distances = adjacentDistances(features)
-  const adaptiveSceneCut = sceneCutThreshold
-    ?? Math.max(DEFAULT_SCENE_CUT_THRESHOLD, percentile(distances, 0.9) * 2.2)
-  return distances.map((distance, index) => ({
-    frame: index + 1,
-    fromFrame: index,
-    timestamp: features[index + 1]?.timestamp ?? 0,
-    distance,
-    acceleration: index === 0 ? 0 : Math.abs(distance - (distances[index - 1] ?? distance)),
-    isDuplicate: distance <= duplicateThreshold,
-    isSceneCut: distance >= adaptiveSceneCut,
-  }))
+  return distances.map((distance, index) => {
+    const acceleration = index === 0 ? 0 : Math.abs(distance - (distances[index - 1] ?? distance))
+    const radius = 12
+    const neighbors = distances
+      .slice(Math.max(0, index - radius), Math.min(distances.length, index + radius + 1))
+      .filter((_, localIndex) => Math.max(0, index - radius) + localIndex !== index)
+    const localMedian = median(neighbors)
+    const localP90 = percentile(neighbors, 0.9)
+    const localThreshold = Math.max(0.018, localMedian * 2.6, localP90 * 1.35)
+    const accelerationThreshold = Math.max(0.012, localMedian * 1.5)
+    const isSceneCut = sceneCutThreshold === undefined
+      ? distance >= localThreshold && acceleration >= accelerationThreshold
+      : distance >= sceneCutThreshold
+    return {
+      frame: index + 1,
+      fromFrame: index,
+      timestamp: features[index + 1]?.timestamp ?? 0,
+      distance,
+      acceleration,
+      isDuplicate: distance <= duplicateThreshold,
+      isSceneCut,
+    }
+  })
 }
 
 export function detectDuplicateFrameGroups(
@@ -166,8 +178,10 @@ export function analyzeSequence(
   options: Pick<LoopAnalysisOptions, 'minFrames' | 'maxFrames'> = {},
 ): SequenceDiagnostics {
   const transitions = analyzeFrameTransitions(features)
-  const sceneCutThreshold = transitions.find((item) => item.isSceneCut)?.distance
-    ?? Math.max(DEFAULT_SCENE_CUT_THRESHOLD, percentile(transitions.map((item) => item.distance), 0.9) * 2.2)
+  const sceneCutThreshold = Math.min(
+    ...transitions.filter((item) => item.isSceneCut).map((item) => item.distance),
+    DEFAULT_SCENE_CUT_THRESHOLD,
+  )
   return {
     transitions,
     duplicateGroups: detectDuplicateFrameGroups(features),
@@ -313,7 +327,11 @@ export function detectLoopCandidates(
   }
 
   // 同分时优先最短完整基频，避免把两轮、三轮重复动作当成最佳循环。
-  candidates.sort((a, b) => a.score - b.score || a.frameCount - b.frameCount)
+  candidates.sort((a, b) => {
+    const scoreDelta = a.score - b.score
+    if (Math.abs(scoreDelta) > 1e-9) return scoreDelta
+    return a.startFrame - b.startFrame || a.frameCount - b.frameCount
+  })
   const diverse: LoopCandidate[] = []
   for (const candidate of candidates) {
     const overlapsExisting = diverse.some((picked) =>
@@ -323,4 +341,85 @@ export function detectLoopCandidates(
     if (diverse.length >= topK) break
   }
   return diverse
+}
+
+/**
+ * Find the earliest good closure whose start is fixed to the first frame.
+ * This is intended for an already segmented action: frame 0 is the action's
+ * own initial pose, not necessarily an idle pose.
+ */
+export function detectAnchoredLoopCandidates(
+  features: FrameFeature[],
+  options: LoopAnalysisOptions = {},
+): LoopCandidate[] {
+  if (features.length < 3) return []
+
+  const minFrames = Math.max(2, options.minFrames ?? 6)
+  const maxFrames = Math.min(features.length, options.maxFrames ?? features.length)
+  if (maxFrames < minFrames) return []
+  const topK = Math.max(1, options.topK ?? 5)
+  const motionWindow = Math.max(1, options.motionWindow ?? 2)
+  const weights = { ...DEFAULT_WEIGHTS, ...options.weights }
+  const weightSum = Object.values(weights).reduce((sum, value) => sum + value, 0) || 1
+  for (const key of Object.keys(weights) as Array<keyof LoopScoreWeights>) {
+    weights[key] /= weightSum
+  }
+
+  const adjacent = adjacentDistances(features)
+  const estimates = Array.from({ length: Math.max(0, maxFrames - minFrames + 1) }, (_, offset) =>
+    calculatePeriodEstimate(features, minFrames + offset))
+  const context: ScoreContext = {
+    adjacent,
+    adjacentPrefix: prefixSums(adjacent),
+    periodEstimates: new Map(estimates.map((estimate) => [estimate.periodFrames, estimate])),
+  }
+  const candidates = Array.from({ length: maxFrames - minFrames + 1 }, (_, offset) =>
+    scoreCandidate(features, 0, minFrames + offset - 1, motionWindow, weights, context))
+
+  const localMinima = candidates.filter((candidate, index) =>
+    candidate.score <= (candidates[index - 1]?.score ?? Number.POSITIVE_INFINITY)
+    && candidate.score <= (candidates[index + 1]?.score ?? Number.POSITIVE_INFINITY))
+  const pool = localMinima.length > 0 ? localMinima : candidates
+  const bestScore = Math.min(...pool.map((candidate) => candidate.score))
+  const acceptableScore = Math.min(0.45, bestScore + Math.max(0.025, bestScore * 0.45))
+  const acceptable = pool.filter((candidate) => candidate.score <= acceptableScore)
+    .sort((a, b) => a.endFrame - b.endFrame || a.score - b.score)
+  const best = pool.reduce((current, candidate) => candidate.score < current.score ? candidate : current)
+  if (!acceptable.some((candidate) => candidate.endFrame === best.endFrame)) acceptable.push(best)
+  const tailSpan = Math.max(minFrames, motionWindow * 4)
+  const tailBest = candidates.slice(Math.max(0, candidates.length - tailSpan))
+    .reduce((current, candidate) => candidate.score < current.score ? candidate : current)
+  if (!acceptable.some((candidate) => candidate.endFrame === tailBest.endFrame)) acceptable.push(tailBest)
+  const finalBoundary = candidates.at(-1)!
+  if (!acceptable.some((candidate) => candidate.endFrame === finalBoundary.endFrame)) acceptable.push(finalBoundary)
+  acceptable.sort((a, b) => a.endFrame - b.endFrame || a.score - b.score)
+  if (acceptable.length <= topK) return acceptable
+
+  // The multimodal reviewer needs temporal coverage, not five near-identical
+  // phase offsets at the beginning. Preserve the earliest and latest viable
+  // closures, then take the best local minimum from evenly spaced middle bins.
+  const selected = new Map<number, LoopCandidate>()
+  selected.set(acceptable[0]!.endFrame, acceptable[0]!)
+  if (topK > 1) selected.set(acceptable.at(-1)!.endFrame, acceptable.at(-1)!)
+  const middleSlots = Math.max(0, topK - selected.size)
+  const firstEnd = acceptable[0]!.endFrame
+  const lastEnd = acceptable.at(-1)!.endFrame
+  for (let slot = 0; slot < middleSlots; slot += 1) {
+    const start = firstEnd + (lastEnd - firstEnd) * slot / Math.max(1, middleSlots)
+    const end = firstEnd + (lastEnd - firstEnd) * (slot + 1) / Math.max(1, middleSlots)
+    const inBin = acceptable.filter((candidate) =>
+      candidate.endFrame > firstEnd
+      && candidate.endFrame < lastEnd
+      && candidate.endFrame >= start
+      && (slot === middleSlots - 1 ? candidate.endFrame <= end : candidate.endFrame < end))
+    if (inBin.length > 0) {
+      const picked = inBin.reduce((current, candidate) => candidate.score < current.score ? candidate : current)
+      selected.set(picked.endFrame, picked)
+    }
+  }
+  for (const candidate of [...acceptable].sort((a, b) => a.score - b.score)) {
+    if (selected.size >= topK) break
+    selected.set(candidate.endFrame, candidate)
+  }
+  return [...selected.values()].sort((a, b) => a.endFrame - b.endFrame).slice(0, topK)
 }

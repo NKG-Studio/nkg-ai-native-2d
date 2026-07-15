@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createMaskEditorState, maskEditorReducer, type MaskStroke } from './mask'
+import { createMaskEditorState, maskEditorReducer, pointInContainedImage, type MaskStroke } from './mask'
 
 const stroke: MaskStroke = {
   mode: 'remove',
@@ -44,5 +44,35 @@ describe('maskEditorReducer', () => {
     })
     expect(ignored).toBe(committed)
     expect(maskEditorReducer(ignored, { type: 'clear_frame', frameId: 7 }).present).toEqual({})
+  })
+})
+
+describe('pointInContainedImage', () => {
+  it('maps pointer coordinates through horizontal letterboxing', () => {
+    const point = pointInContainedImage(
+      { left: 10, top: 20, width: 400, height: 200 },
+      100,
+      100,
+      210,
+      120,
+    )
+    expect(point).toEqual({ x: 0.5, y: 0.5 })
+    expect(pointInContainedImage(
+      { left: 10, top: 20, width: 400, height: 200 },
+      100,
+      100,
+      50,
+      120,
+    )).toBeNull()
+  })
+
+  it('maps pointer coordinates through vertical letterboxing', () => {
+    expect(pointInContainedImage(
+      { left: 0, top: 0, width: 200, height: 400 },
+      200,
+      100,
+      100,
+      200,
+    )).toEqual({ x: 0.5, y: 0.5 })
   })
 })

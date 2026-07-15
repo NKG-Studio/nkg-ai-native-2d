@@ -1,0 +1,4954 @@
+{
+  "tools": [
+    "inspect_video",
+    "analyze_video_loop",
+    "read_analysis_report",
+    "review_video_loop_candidates",
+    "analyze_sprite_sequence",
+    "export_loop_frames",
+    "compose_sprite_sheet"
+  ],
+  "inspected": {
+    "path": "C:\\Users\\17781\\Downloads\\视频合成.mp4",
+    "duration": 54.759,
+    "width": 912,
+    "height": 992,
+    "fps": 23.850282365411914,
+    "codec": "h264",
+    "format": "mov,mp4,m4a,3gp,3g2,mj2"
+  },
+  "analyzed": {
+    "video": {
+      "path": "C:\\Users\\17781\\Downloads\\视频合成.mp4",
+      "duration": 54.759,
+      "width": 912,
+      "height": 992,
+      "fps": 23.850282365411914,
+      "codec": "h264",
+      "format": "mov,mp4,m4a,3gp,3g2,mj2"
+    },
+    "report": {
+      "id": "7632f7d4-6f34-4a7d-b689-6065f3bd8718",
+      "createdAt": "2026-07-15T15:15:59.009Z",
+      "windows": 4,
+      "candidates": 32,
+      "nextTool": "read_analysis_report"
+    },
+    "sampling": {
+      "fps": 24,
+      "sampledFrames": 1314,
+      "windowsAnalyzed": 4,
+      "peakBufferedFrames": 480,
+      "analysisWindowSeconds": 20,
+      "windowOverlapSeconds": 4
+    },
+    "candidates": [
+      {
+        "startFrame": 279,
+        "endFrame": 288,
+        "frameCount": 10,
+        "startTime": 11.625,
+        "endTime": 12,
+        "score": 0.04546968795864323,
+        "confidence": 0.9545303120413567,
+        "suggestsDropLastFrame": false,
+        "diagnostics": {
+          "closure": 0.021619591466280574,
+          "motionMismatch": 0.002881233286918529,
+          "appearanceMismatch": 0.02780804848767279,
+          "periodicityMismatch": 0.14667869580097317,
+          "staticPenalty": 0,
+          "duplicatePenalty": 0,
+          "meanMotion": 0.027891784969477702,
+          "seamMotion": 0.02780804848767279,
+          "expectedMotion": 0.028736555136655323,
+          "periodSupport": 470
+        },
+        "suggestedEndExclusive": 12.041666666666666
+      },
+      {
+        "startFrame": 187,
+        "endFrame": 206,
+        "frameCount": 20,
+        "startTime": 7.791666666666667,
+        "endTime": 8.583333333333334,
+        "score": 0.04690497387876903,
+        "confidence": 0.953095026121231,
+        "suggestsDropLastFrame": false,
+        "diagnostics": {
+          "closure": 0.010659978422394405,
+          "motionMismatch": 0.0013054039420152168,
+          "appearanceMismatch": 0.0273532849332815,
+          "periodicityMismatch": 0.16991258947670318,
+          "staticPenalty": 0,
+          "duplicatePenalty": 0,
+          "meanMotion": 0.02857165492258602,
+          "seamMotion": 0.0273532849332815,
+          "expectedMotion": 0.02773167218840321,
+          "periodSupport": 460
+        },
+        "suggestedEndExclusive": 8.625
+      },
+      {
+        "startFrame": 264,
+        "endFrame": 275,
+        "frameCount": 12,
+        "startTime": 11,
+        "endTime": 11.458333333333334,
+        "score": 0.04863956645868213,
+        "confidence": 0.9513604335413178,
+        "suggestsDropLastFrame": false,
+        "diagnostics": {
+          "closure": 0.022353656014995664,
+          "motionMismatch": 0.0011909831684865165,
+          "appearanceMismatch": 0.028753246614393307,
+          "periodicityMismatch": 0.16022178218331404,
+          "staticPenalty": 0,
+          "duplicatePenalty": 0,
+          "meanMotion": 0.027500065858412522,
+          "seamMotion": 0.028753246614393307,
+          "expectedMotion": 0.029100466428018182,
+          "periodSupport": 468
+        },
+        "suggestedEndExclusive": 11.5
+      },
+      {
+        "startFrame": 1124,
+        "endFrame": 1146,
+        "frameCount": 23,
+        "startTime": 46.833333333333336,
+        "endTime": 47.75,
+        "score": 0.04870131398052748,
+        "confidence": 0.9512986860194725,
+        "suggestsDropLastFrame": false,
+        "diagnostics": {
+          "closure": 0.023761781970178742,
+          "motionMismatch": 0.011012601250941051,
+          "appearanceMismatch": 0.02689023984141441,
+          "periodicityMismatch": 0.14928360259636542,
+          "staticPenalty": 0,
+          "duplicatePenalty": 0,
+          "meanMotion": 0.020588142104356718,
+          "seamMotion": 0.02689023984141441,
+          "expectedMotion": 0.02193616439450373,
+          "periodSupport": 457
+        },
+        "suggestedEndExclusive": 47.791666666666664
+      },
+      {
+        "startFrame": 201,
+        "endFrame": 220,
+        "frameCount": 20,
+        "startTime": 8.375,
+        "endTime": 9.166666666666666,
+        "score": 0.04939569424987392,
+        "confidence": 0.9506043057501261,
+        "suggestsDropLastFrame": false,
+        "diagnostics": {
+          "closure": 0.015117397953397121,
+          "motionMismatch": 0.005543627502706593,
+          "appearanceMismatch": 0.026828585883256904,
+          "periodicityMismatch": 0.16991258947670318,
+          "staticPenalty": 0,
+          "duplicatePenalty": 0,
+          "meanMotion": 0.027698212614879737,
+          "seamMotion": 0.026828585883256904,
+          "expectedMotion": 0.028686222959858974,
+          "periodSupport": 460
+        },
+        "suggestedEndExclusive": 9.208333333333334
+      },
+      {
+        "startFrame": 215,
+        "endFrame": 224,
+        "frameCount": 10,
+        "startTime": 8.958333333333334,
+        "endTime": 9.333333333333334,
+        "score": 0.05015968402221495,
+        "confidence": 0.9498403159777851,
+        "suggestsDropLastFrame": false,
+        "diagnostics": {
+          "closure": 0.03333629215097715,
+          "motionMismatch": 0.004712710150242034,
+          "appearanceMismatch": 0.03114259078238831,
+          "periodicityMismatch": 0.14667869580097317,
+          "staticPenalty": 0,
+          "duplicatePenalty": 0,
+          "meanMotion": 0.027797605555994358,
+          "seamMotion": 0.03114259078238831,
+          "expectedMotion": 0.029531522019219908,
+          "periodSupport": 470
+        },
+        "suggestedEndExclusive": 9.375
+      },
+      {
+        "startFrame": 203,
+        "endFrame": 222,
+        "frameCount": 20,
+        "startTime": 8.458333333333334,
+        "endTime": 9.25,
+        "score": 0.050280443292149174,
+        "confidence": 0.9497195567078508,
+        "suggestsDropLastFrame": false,
+        "diagnostics": {
+          "closure": 0.016065742776217102,
+          "motionMismatch": 0.008391103662743513,
+          "appearanceMismatch": 0.02531505493460186,
+          "periodicityMismatch": 0.16991258947670318,
+          "staticPenalty": 0,
+          "duplicatePenalty": 0,
+          "meanMotion": 0.02744946403328174,
+          "seamMotion": 0.02531505493460186,
+          "expectedMotion": 0.02893954553409093,
+          "periodSupport": 460
+        },
+        "suggestedEndExclusive": 9.291666666666666
+      },
+      {
+        "startFrame": 184,
+        "endFrame": 203,
+        "frameCount": 20,
+        "startTime": 7.666666666666667,
+        "endTime": 8.458333333333334,
+        "score": 0.050407879287030305,
+        "confidence": 0.9495921207129697,
+        "suggestsDropLastFrame": false,
+        "diagnostics": {
+          "closure": 0.016230962222143916,
+          "motionMismatch": 0.009055952188181731,
+          "appearanceMismatch": 0.024211276649112465,
+          "periodicityMismatch": 0.16991258947670318,
+          "staticPenalty": 0,
+          "duplicatePenalty": 0,
+          "meanMotion": 0.028396207875201012,
+          "seamMotion": 0.024211276649112465,
+          "expectedMotion": 0.028304542492733176,
+          "periodSupport": 460
+        },
+        "suggestedEndExclusive": 8.5
+      }
+    ],
+    "sequence": {
+      "dominantPeriods": [
+        {
+          "periodFrames": 10,
+          "mismatch": 0.04400563153880504,
+          "confidence": 0.8591819790758238,
+          "support": 1562
+        },
+        {
+          "periodFrames": 12,
+          "mismatch": 0.04730405777690466,
+          "confidence": 0.848627015113905,
+          "support": 1554
+        },
+        {
+          "periodFrames": 14,
+          "mismatch": 0.05017247564396057,
+          "confidence": 0.8394480779393262,
+          "support": 1546
+        },
+        {
+          "periodFrames": 16,
+          "mismatch": 0.05107209237083619,
+          "confidence": 0.8365693044133242,
+          "support": 1074
+        },
+        {
+          "periodFrames": 20,
+          "mismatch": 0.053097684211469744,
+          "confidence": 0.8300874105232968,
+          "support": 460
+        },
+        {
+          "periodFrames": 18,
+          "mismatch": 0.0533127742829677,
+          "confidence": 0.8293991222945034,
+          "support": 1530
+        }
+      ],
+      "duplicateGroups": [
+        {
+          "startFrame": 0,
+          "endFrame": 146,
+          "frameCount": 147
+        },
+        {
+          "startFrame": 147,
+          "endFrame": 149,
+          "frameCount": 3
+        },
+        {
+          "startFrame": 291,
+          "endFrame": 292,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 293,
+          "endFrame": 301,
+          "frameCount": 9
+        },
+        {
+          "startFrame": 309,
+          "endFrame": 326,
+          "frameCount": 18
+        },
+        {
+          "startFrame": 351,
+          "endFrame": 355,
+          "frameCount": 5
+        },
+        {
+          "startFrame": 357,
+          "endFrame": 359,
+          "frameCount": 3
+        },
+        {
+          "startFrame": 360,
+          "endFrame": 376,
+          "frameCount": 17
+        },
+        {
+          "startFrame": 377,
+          "endFrame": 382,
+          "frameCount": 6
+        },
+        {
+          "startFrame": 385,
+          "endFrame": 388,
+          "frameCount": 4
+        },
+        {
+          "startFrame": 406,
+          "endFrame": 407,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 408,
+          "endFrame": 438,
+          "frameCount": 31
+        },
+        {
+          "startFrame": 439,
+          "endFrame": 453,
+          "frameCount": 15
+        },
+        {
+          "startFrame": 454,
+          "endFrame": 455,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 468,
+          "endFrame": 469,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 470,
+          "endFrame": 479,
+          "frameCount": 10
+        },
+        {
+          "startFrame": 470,
+          "endFrame": 520,
+          "frameCount": 51
+        },
+        {
+          "startFrame": 532,
+          "endFrame": 584,
+          "frameCount": 53
+        },
+        {
+          "startFrame": 585,
+          "endFrame": 611,
+          "frameCount": 27
+        },
+        {
+          "startFrame": 612,
+          "endFrame": 623,
+          "frameCount": 12
+        },
+        {
+          "startFrame": 624,
+          "endFrame": 625,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 626,
+          "endFrame": 627,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 628,
+          "endFrame": 695,
+          "frameCount": 68
+        },
+        {
+          "startFrame": 696,
+          "endFrame": 730,
+          "frameCount": 35
+        },
+        {
+          "startFrame": 731,
+          "endFrame": 761,
+          "frameCount": 31
+        },
+        {
+          "startFrame": 778,
+          "endFrame": 829,
+          "frameCount": 52
+        },
+        {
+          "startFrame": 844,
+          "endFrame": 845,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 846,
+          "endFrame": 863,
+          "frameCount": 18
+        },
+        {
+          "startFrame": 846,
+          "endFrame": 876,
+          "frameCount": 31
+        },
+        {
+          "startFrame": 877,
+          "endFrame": 1022,
+          "frameCount": 146
+        },
+        {
+          "startFrame": 1023,
+          "endFrame": 1033,
+          "frameCount": 11
+        },
+        {
+          "startFrame": 1034,
+          "endFrame": 1035,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1036,
+          "endFrame": 1037,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1038,
+          "endFrame": 1039,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1040,
+          "endFrame": 1041,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1042,
+          "endFrame": 1043,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1044,
+          "endFrame": 1045,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1046,
+          "endFrame": 1055,
+          "frameCount": 10
+        },
+        {
+          "startFrame": 1056,
+          "endFrame": 1057,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1058,
+          "endFrame": 1059,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1060,
+          "endFrame": 1061,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1062,
+          "endFrame": 1063,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1064,
+          "endFrame": 1065,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1066,
+          "endFrame": 1067,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1068,
+          "endFrame": 1081,
+          "frameCount": 14
+        },
+        {
+          "startFrame": 1082,
+          "endFrame": 1083,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1084,
+          "endFrame": 1085,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1086,
+          "endFrame": 1087,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1092,
+          "endFrame": 1093,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1094,
+          "endFrame": 1095,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1167,
+          "endFrame": 1168,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1169,
+          "endFrame": 1246,
+          "frameCount": 78
+        },
+        {
+          "startFrame": 1247,
+          "endFrame": 1248,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1249,
+          "endFrame": 1250,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1251,
+          "endFrame": 1252,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1253,
+          "endFrame": 1254,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1255,
+          "endFrame": 1256,
+          "frameCount": 2
+        },
+        {
+          "startFrame": 1257,
+          "endFrame": 1313,
+          "frameCount": 57
+        }
+      ],
+      "sceneCuts": [],
+      "windowPage": {
+        "offset": 0,
+        "limit": 12,
+        "hasMore": false,
+        "items": [
+          {
+            "index": 0,
+            "startFrame": 0,
+            "endFrame": 479,
+            "startTime": 0,
+            "endTime": 19.958333333333332,
+            "sampledFrames": 480,
+            "candidates": [
+              {
+                "startFrame": 279,
+                "endFrame": 288,
+                "frameCount": 10,
+                "startTime": 11.625,
+                "endTime": 12,
+                "score": 0.04546968795864323,
+                "confidence": 0.9545303120413567,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.021619591466280574,
+                  "motionMismatch": 0.002881233286918529,
+                  "appearanceMismatch": 0.02780804848767279,
+                  "periodicityMismatch": 0.14667869580097317,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.027891784969477702,
+                  "seamMotion": 0.02780804848767279,
+                  "expectedMotion": 0.028736555136655323,
+                  "periodSupport": 470
+                }
+              },
+              {
+                "startFrame": 187,
+                "endFrame": 206,
+                "frameCount": 20,
+                "startTime": 7.791666666666667,
+                "endTime": 8.583333333333334,
+                "score": 0.04690497387876903,
+                "confidence": 0.953095026121231,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.010659978422394405,
+                  "motionMismatch": 0.0013054039420152168,
+                  "appearanceMismatch": 0.0273532849332815,
+                  "periodicityMismatch": 0.16991258947670318,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.02857165492258602,
+                  "seamMotion": 0.0273532849332815,
+                  "expectedMotion": 0.02773167218840321,
+                  "periodSupport": 460
+                }
+              },
+              {
+                "startFrame": 264,
+                "endFrame": 275,
+                "frameCount": 12,
+                "startTime": 11,
+                "endTime": 11.458333333333334,
+                "score": 0.04863956645868213,
+                "confidence": 0.9513604335413178,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.022353656014995664,
+                  "motionMismatch": 0.0011909831684865165,
+                  "appearanceMismatch": 0.028753246614393307,
+                  "periodicityMismatch": 0.16022178218331404,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.027500065858412522,
+                  "seamMotion": 0.028753246614393307,
+                  "expectedMotion": 0.029100466428018182,
+                  "periodSupport": 468
+                }
+              },
+              {
+                "startFrame": 201,
+                "endFrame": 220,
+                "frameCount": 20,
+                "startTime": 8.375,
+                "endTime": 9.166666666666666,
+                "score": 0.04939569424987392,
+                "confidence": 0.9506043057501261,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.015117397953397121,
+                  "motionMismatch": 0.005543627502706593,
+                  "appearanceMismatch": 0.026828585883256904,
+                  "periodicityMismatch": 0.16991258947670318,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.027698212614879737,
+                  "seamMotion": 0.026828585883256904,
+                  "expectedMotion": 0.028686222959858974,
+                  "periodSupport": 460
+                }
+              },
+              {
+                "startFrame": 215,
+                "endFrame": 224,
+                "frameCount": 10,
+                "startTime": 8.958333333333334,
+                "endTime": 9.333333333333334,
+                "score": 0.05015968402221495,
+                "confidence": 0.9498403159777851,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.03333629215097715,
+                  "motionMismatch": 0.004712710150242034,
+                  "appearanceMismatch": 0.03114259078238831,
+                  "periodicityMismatch": 0.14667869580097317,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.027797605555994358,
+                  "seamMotion": 0.03114259078238831,
+                  "expectedMotion": 0.029531522019219908,
+                  "periodSupport": 470
+                }
+              },
+              {
+                "startFrame": 203,
+                "endFrame": 222,
+                "frameCount": 20,
+                "startTime": 8.458333333333334,
+                "endTime": 9.25,
+                "score": 0.050280443292149174,
+                "confidence": 0.9497195567078508,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.016065742776217102,
+                  "motionMismatch": 0.008391103662743513,
+                  "appearanceMismatch": 0.02531505493460186,
+                  "periodicityMismatch": 0.16991258947670318,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.02744946403328174,
+                  "seamMotion": 0.02531505493460186,
+                  "expectedMotion": 0.02893954553409093,
+                  "periodSupport": 460
+                }
+              },
+              {
+                "startFrame": 184,
+                "endFrame": 203,
+                "frameCount": 20,
+                "startTime": 7.666666666666667,
+                "endTime": 8.458333333333334,
+                "score": 0.050407879287030305,
+                "confidence": 0.9495921207129697,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.016230962222143916,
+                  "motionMismatch": 0.009055952188181731,
+                  "appearanceMismatch": 0.024211276649112465,
+                  "periodicityMismatch": 0.16991258947670318,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.028396207875201012,
+                  "seamMotion": 0.024211276649112465,
+                  "expectedMotion": 0.028304542492733176,
+                  "periodSupport": 460
+                }
+              },
+              {
+                "startFrame": 190,
+                "endFrame": 209,
+                "frameCount": 20,
+                "startTime": 7.916666666666667,
+                "endTime": 8.708333333333334,
+                "score": 0.05055692108879602,
+                "confidence": 0.9494430789112039,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.02075041366642143,
+                  "motionMismatch": 0.001901398381814849,
+                  "appearanceMismatch": 0.028330291952105024,
+                  "periodicityMismatch": 0.16991258947670318,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.02890455159724211,
+                  "seamMotion": 0.028330291952105024,
+                  "expectedMotion": 0.028904322152564985,
+                  "periodSupport": 460
+                }
+              }
+            ],
+            "dominantPeriods": [
+              {
+                "periodFrames": 10,
+                "mismatch": 0.045837092437804115,
+                "confidence": 0.8533213041990269,
+                "support": 470
+              },
+              {
+                "periodFrames": 12,
+                "mismatch": 0.05006930693228563,
+                "confidence": 0.8397782178166859,
+                "support": 468
+              },
+              {
+                "periodFrames": 20,
+                "mismatch": 0.053097684211469744,
+                "confidence": 0.8300874105232968,
+                "support": 460
+              },
+              {
+                "periodFrames": 14,
+                "mismatch": 0.053957007391376405,
+                "confidence": 0.8273375763475955,
+                "support": 466
+              },
+              {
+                "periodFrames": 18,
+                "mismatch": 0.05478968747277428,
+                "confidence": 0.8246730000871223,
+                "support": 462
+              }
+            ],
+            "sceneCuts": [],
+            "duplicateGroups": [
+              {
+                "startFrame": 0,
+                "endFrame": 146,
+                "frameCount": 147
+              },
+              {
+                "startFrame": 147,
+                "endFrame": 149,
+                "frameCount": 3
+              },
+              {
+                "startFrame": 291,
+                "endFrame": 292,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 293,
+                "endFrame": 301,
+                "frameCount": 9
+              },
+              {
+                "startFrame": 309,
+                "endFrame": 326,
+                "frameCount": 18
+              },
+              {
+                "startFrame": 351,
+                "endFrame": 355,
+                "frameCount": 5
+              },
+              {
+                "startFrame": 357,
+                "endFrame": 359,
+                "frameCount": 3
+              },
+              {
+                "startFrame": 360,
+                "endFrame": 376,
+                "frameCount": 17
+              },
+              {
+                "startFrame": 377,
+                "endFrame": 382,
+                "frameCount": 6
+              },
+              {
+                "startFrame": 385,
+                "endFrame": 388,
+                "frameCount": 4
+              },
+              {
+                "startFrame": 406,
+                "endFrame": 407,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 408,
+                "endFrame": 438,
+                "frameCount": 31
+              },
+              {
+                "startFrame": 439,
+                "endFrame": 453,
+                "frameCount": 15
+              },
+              {
+                "startFrame": 454,
+                "endFrame": 455,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 468,
+                "endFrame": 469,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 470,
+                "endFrame": 479,
+                "frameCount": 10
+              }
+            ],
+            "segments": [
+              {
+                "startFrame": 0,
+                "endFrame": 479,
+                "startTime": 0,
+                "endTime": 19.958333333333332,
+                "sampledFrames": 480,
+                "candidateCount": 8
+              }
+            ]
+          },
+          {
+            "index": 1,
+            "startFrame": 384,
+            "endFrame": 863,
+            "startTime": 16,
+            "endTime": 35.958333333333336,
+            "sampledFrames": 480,
+            "candidates": [
+              {
+                "startFrame": 773,
+                "endFrame": 782,
+                "frameCount": 10,
+                "startTime": 32.208333333333336,
+                "endTime": 32.583333333333336,
+                "score": 0.0752074571431293,
+                "confidence": 0.9247925428568707,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.05146726049602586,
+                  "motionMismatch": 0.07761581743106011,
+                  "appearanceMismatch": 0.05112634936659777,
+                  "periodicityMismatch": 0.14579451850707612,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.013837826793178416,
+                  "seamMotion": 0.05112634936659777,
+                  "expectedMotion": 0.014680732586703328,
+                  "periodSupport": 470
+                }
+              },
+              {
+                "startFrame": 384,
+                "endFrame": 393,
+                "frameCount": 10,
+                "startTime": 16,
+                "endTime": 16.375,
+                "score": 0.07540575103202861,
+                "confidence": 0.9245942489679714,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.051664745328236235,
+                  "motionMismatch": 0.07888218864849625,
+                  "appearanceMismatch": 0.04896659878863644,
+                  "periodicityMismatch": 0.14579451850707612,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.012658059152843983,
+                  "seamMotion": 0.04896659878863644,
+                  "expectedMotion": 0.012724805025948274,
+                  "periodSupport": 470
+                }
+              },
+              {
+                "startFrame": 771,
+                "endFrame": 780,
+                "frameCount": 10,
+                "startTime": 32.125,
+                "endTime": 32.5,
+                "score": 0.07646730307536055,
+                "confidence": 0.9235326969246395,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.05447662210677913,
+                  "motionMismatch": 0.07766060662312439,
+                  "appearanceMismatch": 0.05395026909759404,
+                  "periodicityMismatch": 0.14579451850707612,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.017359951412186516,
+                  "seamMotion": 0.05395026909759404,
+                  "expectedMotion": 0.017448585361694472,
+                  "periodSupport": 470
+                }
+              },
+              {
+                "startFrame": 386,
+                "endFrame": 395,
+                "frameCount": 10,
+                "startTime": 16.083333333333332,
+                "endTime": 16.458333333333332,
+                "score": 0.07779788228036752,
+                "confidence": 0.9222021177196325,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.054161268376982166,
+                  "motionMismatch": 0.08443385574189215,
+                  "appearanceMismatch": 0.051603015155514916,
+                  "periodicityMismatch": 0.14579451850707612,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.01319131528457752,
+                  "seamMotion": 0.051603015155514916,
+                  "expectedMotion": 0.013159857227926817,
+                  "periodSupport": 470
+                }
+              },
+              {
+                "startFrame": 773,
+                "endFrame": 784,
+                "frameCount": 12,
+                "startTime": 32.208333333333336,
+                "endTime": 32.666666666666664,
+                "score": 0.07870669516915725,
+                "confidence": 0.9212933048308427,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.051601422614159065,
+                  "motionMismatch": 0.0803822226519369,
+                  "appearanceMismatch": 0.051714357358866585,
+                  "periodicityMismatch": 0.15722220606320414,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.012212756642343336,
+                  "seamMotion": 0.051714357358866585,
+                  "expectedMotion": 0.013777204546842278,
+                  "periodSupport": 468
+                }
+              },
+              {
+                "startFrame": 388,
+                "endFrame": 397,
+                "frameCount": 10,
+                "startTime": 16.166666666666668,
+                "endTime": 16.541666666666668,
+                "score": 0.07936288659738325,
+                "confidence": 0.9206371134026168,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.0559738571655315,
+                  "motionMismatch": 0.08788023259761446,
+                  "appearanceMismatch": 0.05312293619970998,
+                  "periodicityMismatch": 0.14579451850707612,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.013523393072782643,
+                  "seamMotion": 0.05312293619970998,
+                  "expectedMotion": 0.01342448850503443,
+                  "periodSupport": 470
+                }
+              },
+              {
+                "startFrame": 390,
+                "endFrame": 399,
+                "frameCount": 10,
+                "startTime": 16.25,
+                "endTime": 16.625,
+                "score": 0.0803812151011792,
+                "confidence": 0.9196187848988208,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.056840749544307026,
+                  "motionMismatch": 0.09047370378848521,
+                  "appearanceMismatch": 0.054387336314751136,
+                  "periodicityMismatch": 0.14579451850707612,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.013669880315487583,
+                  "seamMotion": 0.054387336314751136,
+                  "expectedMotion": 0.01352408847197993,
+                  "periodSupport": 470
+                }
+              },
+              {
+                "startFrame": 775,
+                "endFrame": 784,
+                "frameCount": 10,
+                "startTime": 32.291666666666664,
+                "endTime": 32.666666666666664,
+                "score": 0.08074242951892885,
+                "confidence": 0.9192575704810712,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.04523356757461101,
+                  "motionMismatch": 0.07181579766196086,
+                  "appearanceMismatch": 0.04521280421417635,
+                  "periodicityMismatch": 0.14579451850707612,
+                  "staticPenalty": 0.1586586054309687,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.010096096734828376,
+                  "seamMotion": 0.04521280421417635,
+                  "expectedMotion": 0.011285591183133263,
+                  "periodSupport": 470
+                }
+              }
+            ],
+            "dominantPeriods": [
+              {
+                "periodFrames": 10,
+                "mismatch": 0.04556078703346128,
+                "confidence": 0.8542054814929239,
+                "support": 470
+              },
+              {
+                "periodFrames": 12,
+                "mismatch": 0.04913193939475129,
+                "confidence": 0.8427777939367959,
+                "support": 468
+              },
+              {
+                "periodFrames": 14,
+                "mismatch": 0.0520109654606827,
+                "confidence": 0.8335649105258154,
+                "support": 466
+              },
+              {
+                "periodFrames": 16,
+                "mismatch": 0.05439241129779191,
+                "confidence": 0.8259442838470659,
+                "support": 464
+              },
+              {
+                "periodFrames": 18,
+                "mismatch": 0.05643955465010573,
+                "confidence": 0.8193934251196616,
+                "support": 462
+              }
+            ],
+            "sceneCuts": [],
+            "duplicateGroups": [
+              {
+                "startFrame": 385,
+                "endFrame": 388,
+                "frameCount": 4
+              },
+              {
+                "startFrame": 406,
+                "endFrame": 407,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 408,
+                "endFrame": 438,
+                "frameCount": 31
+              },
+              {
+                "startFrame": 439,
+                "endFrame": 453,
+                "frameCount": 15
+              },
+              {
+                "startFrame": 454,
+                "endFrame": 455,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 468,
+                "endFrame": 469,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 470,
+                "endFrame": 520,
+                "frameCount": 51
+              },
+              {
+                "startFrame": 532,
+                "endFrame": 584,
+                "frameCount": 53
+              },
+              {
+                "startFrame": 585,
+                "endFrame": 611,
+                "frameCount": 27
+              },
+              {
+                "startFrame": 612,
+                "endFrame": 623,
+                "frameCount": 12
+              },
+              {
+                "startFrame": 624,
+                "endFrame": 625,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 626,
+                "endFrame": 627,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 628,
+                "endFrame": 695,
+                "frameCount": 68
+              },
+              {
+                "startFrame": 696,
+                "endFrame": 730,
+                "frameCount": 35
+              },
+              {
+                "startFrame": 731,
+                "endFrame": 761,
+                "frameCount": 31
+              },
+              {
+                "startFrame": 778,
+                "endFrame": 829,
+                "frameCount": 52
+              },
+              {
+                "startFrame": 844,
+                "endFrame": 845,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 846,
+                "endFrame": 863,
+                "frameCount": 18
+              }
+            ],
+            "segments": [
+              {
+                "startFrame": 384,
+                "endFrame": 863,
+                "startTime": 16,
+                "endTime": 35.958333333333336,
+                "sampledFrames": 480,
+                "candidateCount": 8
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "startFrame": 768,
+            "endFrame": 1247,
+            "startTime": 32,
+            "endTime": 51.958333333333336,
+            "sampledFrames": 480,
+            "candidates": [
+              {
+                "startFrame": 1124,
+                "endFrame": 1146,
+                "frameCount": 23,
+                "startTime": 46.833333333333336,
+                "endTime": 47.75,
+                "score": 0.04870131398052748,
+                "confidence": 0.9512986860194725,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.023761781970178742,
+                  "motionMismatch": 0.011012601250941051,
+                  "appearanceMismatch": 0.02689023984141441,
+                  "periodicityMismatch": 0.14928360259636542,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.020588142104356718,
+                  "seamMotion": 0.02689023984141441,
+                  "expectedMotion": 0.02193616439450373,
+                  "periodSupport": 457
+                }
+              },
+              {
+                "startFrame": 1125,
+                "endFrame": 1148,
+                "frameCount": 24,
+                "startTime": 46.875,
+                "endTime": 47.833333333333336,
+                "score": 0.05145224730333045,
+                "confidence": 0.9485477526966696,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.031139089950301818,
+                  "motionMismatch": 0.009717309669914765,
+                  "appearanceMismatch": 0.024736684442635205,
+                  "periodicityMismatch": 0.15230778185015614,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.02050788591559654,
+                  "seamMotion": 0.024736684442635205,
+                  "expectedMotion": 0.020675050435786033,
+                  "periodSupport": 456
+                }
+              },
+              {
+                "startFrame": 1122,
+                "endFrame": 1144,
+                "frameCount": 23,
+                "startTime": 46.75,
+                "endTime": 47.666666666666664,
+                "score": 0.05162779789169938,
+                "confidence": 0.9483722021083006,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.02661171105884916,
+                  "motionMismatch": 0.01803521563354469,
+                  "appearanceMismatch": 0.030291246956402958,
+                  "periodicityMismatch": 0.14928360259636542,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.020496544965100814,
+                  "seamMotion": 0.030291246956402958,
+                  "expectedMotion": 0.022021792855471116,
+                  "periodSupport": 457
+                }
+              },
+              {
+                "startFrame": 1093,
+                "endFrame": 1114,
+                "frameCount": 22,
+                "startTime": 45.541666666666664,
+                "endTime": 46.416666666666664,
+                "score": 0.05174080419463472,
+                "confidence": 0.9482591958053653,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.027711871093297938,
+                  "motionMismatch": 0.019510390345693882,
+                  "appearanceMismatch": 0.02797534733926527,
+                  "periodicityMismatch": 0.1474926939700236,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.020866182899288706,
+                  "seamMotion": 0.02797534733926527,
+                  "expectedMotion": 0.018888760575009444,
+                  "periodSupport": 458
+                }
+              },
+              {
+                "startFrame": 1100,
+                "endFrame": 1122,
+                "frameCount": 23,
+                "startTime": 45.833333333333336,
+                "endTime": 46.75,
+                "score": 0.052592557300367555,
+                "confidence": 0.9474074426996324,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.030057098025337646,
+                  "motionMismatch": 0.017150963651870278,
+                  "appearanceMismatch": 0.03036060090220233,
+                  "periodicityMismatch": 0.14928360259636542,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.02065090114346758,
+                  "seamMotion": 0.03036060090220233,
+                  "expectedMotion": 0.022651796037260766,
+                  "periodSupport": 457
+                }
+              },
+              {
+                "startFrame": 1095,
+                "endFrame": 1115,
+                "frameCount": 21,
+                "startTime": 45.625,
+                "endTime": 46.458333333333336,
+                "score": 0.05278082785852148,
+                "confidence": 0.9472191721414785,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.02883968964645244,
+                  "motionMismatch": 0.022294075930052948,
+                  "appearanceMismatch": 0.02971941177601905,
+                  "periodicityMismatch": 0.1468633425559726,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.021209904147059876,
+                  "seamMotion": 0.02971941177601905,
+                  "expectedMotion": 0.01947172856577506,
+                  "periodSupport": 459
+                }
+              },
+              {
+                "startFrame": 1103,
+                "endFrame": 1124,
+                "frameCount": 22,
+                "startTime": 45.958333333333336,
+                "endTime": 46.833333333333336,
+                "score": 0.05288557349584429,
+                "confidence": 0.9471144265041557,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.03143320850259956,
+                  "motionMismatch": 0.018066999011165343,
+                  "appearanceMismatch": 0.030799453618438544,
+                  "periodicityMismatch": 0.1474926939700236,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.020739789618092235,
+                  "seamMotion": 0.030799453618438544,
+                  "expectedMotion": 0.02277197137709512,
+                  "periodSupport": 458
+                }
+              },
+              {
+                "startFrame": 1105,
+                "endFrame": 1126,
+                "frameCount": 22,
+                "startTime": 46.041666666666664,
+                "endTime": 46.916666666666664,
+                "score": 0.05328676030617181,
+                "confidence": 0.9467132396938281,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.03325712148620252,
+                  "motionMismatch": 0.01734195094901782,
+                  "appearanceMismatch": 0.03023780275366261,
+                  "periodicityMismatch": 0.1474926939700236,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.02079939587886804,
+                  "seamMotion": 0.03023780275366261,
+                  "expectedMotion": 0.0226318509305834,
+                  "periodSupport": 458
+                }
+              }
+            ],
+            "dominantPeriods": [
+              {
+                "periodFrames": 10,
+                "mismatch": 0.04016249939256521,
+                "confidence": 0.8714800019437914,
+                "support": 470
+              },
+              {
+                "periodFrames": 12,
+                "mismatch": 0.04221444961959794,
+                "confidence": 0.8649137612172866,
+                "support": 468
+              },
+              {
+                "periodFrames": 14,
+                "mismatch": 0.04392127828090522,
+                "confidence": 0.8594519095011033,
+                "support": 466
+              },
+              {
+                "periodFrames": 16,
+                "mismatch": 0.04513170631342232,
+                "confidence": 0.8555785397970486,
+                "support": 464
+              },
+              {
+                "periodFrames": 18,
+                "mismatch": 0.04569800474492408,
+                "confidence": 0.8537663848162429,
+                "support": 462
+              }
+            ],
+            "sceneCuts": [],
+            "duplicateGroups": [
+              {
+                "startFrame": 778,
+                "endFrame": 829,
+                "frameCount": 52
+              },
+              {
+                "startFrame": 844,
+                "endFrame": 845,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 846,
+                "endFrame": 876,
+                "frameCount": 31
+              },
+              {
+                "startFrame": 877,
+                "endFrame": 1022,
+                "frameCount": 146
+              },
+              {
+                "startFrame": 1023,
+                "endFrame": 1033,
+                "frameCount": 11
+              },
+              {
+                "startFrame": 1034,
+                "endFrame": 1035,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1036,
+                "endFrame": 1037,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1038,
+                "endFrame": 1039,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1040,
+                "endFrame": 1041,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1042,
+                "endFrame": 1043,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1044,
+                "endFrame": 1045,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1046,
+                "endFrame": 1055,
+                "frameCount": 10
+              },
+              {
+                "startFrame": 1056,
+                "endFrame": 1057,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1058,
+                "endFrame": 1059,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1060,
+                "endFrame": 1061,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1062,
+                "endFrame": 1063,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1064,
+                "endFrame": 1065,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1066,
+                "endFrame": 1067,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1068,
+                "endFrame": 1081,
+                "frameCount": 14
+              },
+              {
+                "startFrame": 1082,
+                "endFrame": 1083,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1084,
+                "endFrame": 1085,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1086,
+                "endFrame": 1087,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1092,
+                "endFrame": 1093,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1094,
+                "endFrame": 1095,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1167,
+                "endFrame": 1168,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1169,
+                "endFrame": 1246,
+                "frameCount": 78
+              }
+            ],
+            "segments": [
+              {
+                "startFrame": 768,
+                "endFrame": 1247,
+                "startTime": 32,
+                "endTime": 51.958333333333336,
+                "sampledFrames": 480,
+                "candidateCount": 8
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "startFrame": 1152,
+            "endFrame": 1313,
+            "startTime": 48,
+            "endTime": 54.708333333333336,
+            "sampledFrames": 162,
+            "candidates": [
+              {
+                "startFrame": 1152,
+                "endFrame": 1164,
+                "frameCount": 13,
+                "startTime": 48,
+                "endTime": 48.5,
+                "score": 0.06877279006427645,
+                "confidence": 0.9312272099357235,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.04517328602584277,
+                  "motionMismatch": 0.04940691577589691,
+                  "appearanceMismatch": 0.04593653123435712,
+                  "periodicityMismatch": 0.15783871054385867,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.020855552409857064,
+                  "seamMotion": 0.04593653123435712,
+                  "expectedMotion": 0.023716766617577247,
+                  "periodSupport": 149
+                }
+              },
+              {
+                "startFrame": 1154,
+                "endFrame": 1163,
+                "frameCount": 10,
+                "startTime": 48.083333333333336,
+                "endTime": 48.458333333333336,
+                "score": 0.06903323246221392,
+                "confidence": 0.9309667675377861,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.049929289953347944,
+                  "motionMismatch": 0.059097493750019256,
+                  "appearanceMismatch": 0.046586828228547615,
+                  "periodicityMismatch": 0.14227887133244663,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.01896573506508971,
+                  "seamMotion": 0.046586828228547615,
+                  "expectedMotion": 0.01983100806544062,
+                  "periodSupport": 152
+                }
+              },
+              {
+                "startFrame": 1152,
+                "endFrame": 1166,
+                "frameCount": 15,
+                "startTime": 48,
+                "endTime": 48.583333333333336,
+                "score": 0.07236257074396127,
+                "confidence": 0.9276374292560388,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.049044900522043834,
+                  "motionMismatch": 0.04889327441888507,
+                  "appearanceMismatch": 0.04786742067605737,
+                  "periodicityMismatch": 0.16718135438270565,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.021488141809509368,
+                  "seamMotion": 0.04786742067605737,
+                  "expectedMotion": 0.025219589637008842,
+                  "periodSupport": 147
+                }
+              },
+              {
+                "startFrame": 1152,
+                "endFrame": 1162,
+                "frameCount": 11,
+                "startTime": 48,
+                "endTime": 48.416666666666664,
+                "score": 0.07483797554887736,
+                "confidence": 0.9251620244511226,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.05151026102380099,
+                  "motionMismatch": 0.07287043019742544,
+                  "appearanceMismatch": 0.05428645722553726,
+                  "periodicityMismatch": 0.14788611239733304,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.020386692242011468,
+                  "seamMotion": 0.05428645722553726,
+                  "expectedMotion": 0.021037823954290952,
+                  "periodSupport": 151
+                }
+              },
+              {
+                "startFrame": 1154,
+                "endFrame": 1165,
+                "frameCount": 12,
+                "startTime": 48.083333333333336,
+                "endTime": 48.541666666666664,
+                "score": 0.07610912440341584,
+                "confidence": 0.9238908755965841,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.05586848171948776,
+                  "motionMismatch": 0.06728756075083667,
+                  "appearanceMismatch": 0.05317518793692045,
+                  "periodicityMismatch": 0.15296171251514817,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.020134518260645884,
+                  "seamMotion": 0.05317518793692045,
+                  "expectedMotion": 0.022083111977870367,
+                  "periodSupport": 150
+                }
+              },
+              {
+                "startFrame": 1156,
+                "endFrame": 1165,
+                "frameCount": 10,
+                "startTime": 48.166666666666664,
+                "endTime": 48.541666666666664,
+                "score": 0.07717439737381028,
+                "confidence": 0.9228256026261897,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.05906145567521357,
+                  "motionMismatch": 0.07697510228451585,
+                  "appearanceMismatch": 0.05590685970208353,
+                  "periodicityMismatch": 0.14227887133244663,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.019283402212013648,
+                  "seamMotion": 0.05590685970208353,
+                  "expectedMotion": 0.019863093391258288,
+                  "periodSupport": 152
+                }
+              },
+              {
+                "startFrame": 1154,
+                "endFrame": 1167,
+                "frameCount": 14,
+                "startTime": 48.083333333333336,
+                "endTime": 48.625,
+                "score": 0.07987955907086842,
+                "confidence": 0.9201204409291316,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.056050882737765206,
+                  "motionMismatch": 0.07218036672031986,
+                  "appearanceMismatch": 0.056050882737765206,
+                  "periodicityMismatch": 0.16256208461720947,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.020651908706952313,
+                  "seamMotion": 0.056050882737765206,
+                  "expectedMotion": 0.02218234628205458,
+                  "periodSupport": 148
+                }
+              },
+              {
+                "startFrame": 1156,
+                "endFrame": 1167,
+                "frameCount": 12,
+                "startTime": 48.166666666666664,
+                "endTime": 48.625,
+                "score": 0.08250956497888007,
+                "confidence": 0.9174904350211199,
+                "suggestsDropLastFrame": false,
+                "diagnostics": {
+                  "closure": 0.06008820519384566,
+                  "motionMismatch": 0.0856737824742889,
+                  "appearanceMismatch": 0.06008820519384566,
+                  "periodicityMismatch": 0.15296171251514817,
+                  "staticPenalty": 0,
+                  "duplicatePenalty": 0,
+                  "meanMotion": 0.0200496120210362,
+                  "seamMotion": 0.06008820519384566,
+                  "expectedMotion": 0.0199623276954425,
+                  "periodSupport": 150
+                }
+              }
+            ],
+            "dominantPeriods": [
+              {
+                "periodFrames": 10,
+                "mismatch": 0.044462147291389566,
+                "confidence": 0.8577211286675533,
+                "support": 152
+              },
+              {
+                "periodFrames": 12,
+                "mismatch": 0.0478005351609838,
+                "confidence": 0.8470382874848519,
+                "support": 150
+              },
+              {
+                "periodFrames": 14,
+                "mismatch": 0.05080065144287796,
+                "confidence": 0.8374379153827906,
+                "support": 148
+              },
+              {
+                "periodFrames": 16,
+                "mismatch": 0.05369215950129432,
+                "confidence": 0.8281850895958581,
+                "support": 146
+              },
+              {
+                "periodFrames": 18,
+                "mismatch": 0.056323850264066694,
+                "confidence": 0.8197636791549866,
+                "support": 144
+              }
+            ],
+            "sceneCuts": [],
+            "duplicateGroups": [
+              {
+                "startFrame": 1167,
+                "endFrame": 1168,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1169,
+                "endFrame": 1246,
+                "frameCount": 78
+              },
+              {
+                "startFrame": 1247,
+                "endFrame": 1248,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1249,
+                "endFrame": 1250,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1251,
+                "endFrame": 1252,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1253,
+                "endFrame": 1254,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1255,
+                "endFrame": 1256,
+                "frameCount": 2
+              },
+              {
+                "startFrame": 1257,
+                "endFrame": 1313,
+                "frameCount": 57
+              }
+            ],
+            "segments": [
+              {
+                "startFrame": 1152,
+                "endFrame": 1313,
+                "startTime": 48,
+                "endTime": 54.708333333333336,
+                "sampledFrames": 162,
+                "candidateCount": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "note": "视频已完整流式扫描；analysis_window_seconds 只控制局部计算窗口，不截断输入。confidence 是启发式相对置信度，建议由多模态模型复核候选。"
+  },
+  "paged": {
+    "report": {
+      "id": "7632f7d4-6f34-4a7d-b689-6065f3bd8718",
+      "createdAt": "2026-07-15T15:15:59.009Z",
+      "videoPath": "C:\\Users\\17781\\Downloads\\视频合成.mp4",
+      "sourceKind": "video",
+      "fps": 24
+    },
+    "totals": {
+      "sampledFrames": 1314,
+      "windows": 4,
+      "candidates": 32,
+      "sceneCuts": 0,
+      "duplicateGroups": 58
+    },
+    "windowPage": {
+      "offset": 0,
+      "limit": 100,
+      "hasMore": false,
+      "items": [
+        {
+          "index": 0,
+          "startFrame": 0,
+          "endFrame": 479,
+          "startTime": 0,
+          "endTime": 19.958333333333332,
+          "sampledFrames": 480,
+          "candidates": [
+            {
+              "startFrame": 279,
+              "endFrame": 288,
+              "frameCount": 10,
+              "startTime": 11.625,
+              "endTime": 12,
+              "score": 0.04546968795864323,
+              "confidence": 0.9545303120413567,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.021619591466280574,
+                "motionMismatch": 0.002881233286918529,
+                "appearanceMismatch": 0.02780804848767279,
+                "periodicityMismatch": 0.14667869580097317,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.027891784969477702,
+                "seamMotion": 0.02780804848767279,
+                "expectedMotion": 0.028736555136655323,
+                "periodSupport": 470
+              }
+            },
+            {
+              "startFrame": 187,
+              "endFrame": 206,
+              "frameCount": 20,
+              "startTime": 7.791666666666667,
+              "endTime": 8.583333333333334,
+              "score": 0.04690497387876903,
+              "confidence": 0.953095026121231,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.010659978422394405,
+                "motionMismatch": 0.0013054039420152168,
+                "appearanceMismatch": 0.0273532849332815,
+                "periodicityMismatch": 0.16991258947670318,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.02857165492258602,
+                "seamMotion": 0.0273532849332815,
+                "expectedMotion": 0.02773167218840321,
+                "periodSupport": 460
+              }
+            },
+            {
+              "startFrame": 264,
+              "endFrame": 275,
+              "frameCount": 12,
+              "startTime": 11,
+              "endTime": 11.458333333333334,
+              "score": 0.04863956645868213,
+              "confidence": 0.9513604335413178,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.022353656014995664,
+                "motionMismatch": 0.0011909831684865165,
+                "appearanceMismatch": 0.028753246614393307,
+                "periodicityMismatch": 0.16022178218331404,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.027500065858412522,
+                "seamMotion": 0.028753246614393307,
+                "expectedMotion": 0.029100466428018182,
+                "periodSupport": 468
+              }
+            },
+            {
+              "startFrame": 201,
+              "endFrame": 220,
+              "frameCount": 20,
+              "startTime": 8.375,
+              "endTime": 9.166666666666666,
+              "score": 0.04939569424987392,
+              "confidence": 0.9506043057501261,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.015117397953397121,
+                "motionMismatch": 0.005543627502706593,
+                "appearanceMismatch": 0.026828585883256904,
+                "periodicityMismatch": 0.16991258947670318,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.027698212614879737,
+                "seamMotion": 0.026828585883256904,
+                "expectedMotion": 0.028686222959858974,
+                "periodSupport": 460
+              }
+            },
+            {
+              "startFrame": 215,
+              "endFrame": 224,
+              "frameCount": 10,
+              "startTime": 8.958333333333334,
+              "endTime": 9.333333333333334,
+              "score": 0.05015968402221495,
+              "confidence": 0.9498403159777851,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.03333629215097715,
+                "motionMismatch": 0.004712710150242034,
+                "appearanceMismatch": 0.03114259078238831,
+                "periodicityMismatch": 0.14667869580097317,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.027797605555994358,
+                "seamMotion": 0.03114259078238831,
+                "expectedMotion": 0.029531522019219908,
+                "periodSupport": 470
+              }
+            },
+            {
+              "startFrame": 203,
+              "endFrame": 222,
+              "frameCount": 20,
+              "startTime": 8.458333333333334,
+              "endTime": 9.25,
+              "score": 0.050280443292149174,
+              "confidence": 0.9497195567078508,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.016065742776217102,
+                "motionMismatch": 0.008391103662743513,
+                "appearanceMismatch": 0.02531505493460186,
+                "periodicityMismatch": 0.16991258947670318,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.02744946403328174,
+                "seamMotion": 0.02531505493460186,
+                "expectedMotion": 0.02893954553409093,
+                "periodSupport": 460
+              }
+            },
+            {
+              "startFrame": 184,
+              "endFrame": 203,
+              "frameCount": 20,
+              "startTime": 7.666666666666667,
+              "endTime": 8.458333333333334,
+              "score": 0.050407879287030305,
+              "confidence": 0.9495921207129697,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.016230962222143916,
+                "motionMismatch": 0.009055952188181731,
+                "appearanceMismatch": 0.024211276649112465,
+                "periodicityMismatch": 0.16991258947670318,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.028396207875201012,
+                "seamMotion": 0.024211276649112465,
+                "expectedMotion": 0.028304542492733176,
+                "periodSupport": 460
+              }
+            },
+            {
+              "startFrame": 190,
+              "endFrame": 209,
+              "frameCount": 20,
+              "startTime": 7.916666666666667,
+              "endTime": 8.708333333333334,
+              "score": 0.05055692108879602,
+              "confidence": 0.9494430789112039,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.02075041366642143,
+                "motionMismatch": 0.001901398381814849,
+                "appearanceMismatch": 0.028330291952105024,
+                "periodicityMismatch": 0.16991258947670318,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.02890455159724211,
+                "seamMotion": 0.028330291952105024,
+                "expectedMotion": 0.028904322152564985,
+                "periodSupport": 460
+              }
+            }
+          ],
+          "dominantPeriods": [
+            {
+              "periodFrames": 10,
+              "mismatch": 0.045837092437804115,
+              "confidence": 0.8533213041990269,
+              "support": 470
+            },
+            {
+              "periodFrames": 12,
+              "mismatch": 0.05006930693228563,
+              "confidence": 0.8397782178166859,
+              "support": 468
+            },
+            {
+              "periodFrames": 20,
+              "mismatch": 0.053097684211469744,
+              "confidence": 0.8300874105232968,
+              "support": 460
+            },
+            {
+              "periodFrames": 14,
+              "mismatch": 0.053957007391376405,
+              "confidence": 0.8273375763475955,
+              "support": 466
+            },
+            {
+              "periodFrames": 18,
+              "mismatch": 0.05478968747277428,
+              "confidence": 0.8246730000871223,
+              "support": 462
+            }
+          ],
+          "sceneCuts": [],
+          "duplicateGroups": [
+            {
+              "startFrame": 0,
+              "endFrame": 146,
+              "frameCount": 147
+            },
+            {
+              "startFrame": 147,
+              "endFrame": 149,
+              "frameCount": 3
+            },
+            {
+              "startFrame": 291,
+              "endFrame": 292,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 293,
+              "endFrame": 301,
+              "frameCount": 9
+            },
+            {
+              "startFrame": 309,
+              "endFrame": 326,
+              "frameCount": 18
+            },
+            {
+              "startFrame": 351,
+              "endFrame": 355,
+              "frameCount": 5
+            },
+            {
+              "startFrame": 357,
+              "endFrame": 359,
+              "frameCount": 3
+            },
+            {
+              "startFrame": 360,
+              "endFrame": 376,
+              "frameCount": 17
+            },
+            {
+              "startFrame": 377,
+              "endFrame": 382,
+              "frameCount": 6
+            },
+            {
+              "startFrame": 385,
+              "endFrame": 388,
+              "frameCount": 4
+            },
+            {
+              "startFrame": 406,
+              "endFrame": 407,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 408,
+              "endFrame": 438,
+              "frameCount": 31
+            },
+            {
+              "startFrame": 439,
+              "endFrame": 453,
+              "frameCount": 15
+            },
+            {
+              "startFrame": 454,
+              "endFrame": 455,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 468,
+              "endFrame": 469,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 470,
+              "endFrame": 479,
+              "frameCount": 10
+            }
+          ],
+          "segments": [
+            {
+              "startFrame": 0,
+              "endFrame": 479,
+              "startTime": 0,
+              "endTime": 19.958333333333332,
+              "sampledFrames": 480,
+              "candidateCount": 8
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "startFrame": 384,
+          "endFrame": 863,
+          "startTime": 16,
+          "endTime": 35.958333333333336,
+          "sampledFrames": 480,
+          "candidates": [
+            {
+              "startFrame": 773,
+              "endFrame": 782,
+              "frameCount": 10,
+              "startTime": 32.208333333333336,
+              "endTime": 32.583333333333336,
+              "score": 0.0752074571431293,
+              "confidence": 0.9247925428568707,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.05146726049602586,
+                "motionMismatch": 0.07761581743106011,
+                "appearanceMismatch": 0.05112634936659777,
+                "periodicityMismatch": 0.14579451850707612,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.013837826793178416,
+                "seamMotion": 0.05112634936659777,
+                "expectedMotion": 0.014680732586703328,
+                "periodSupport": 470
+              }
+            },
+            {
+              "startFrame": 384,
+              "endFrame": 393,
+              "frameCount": 10,
+              "startTime": 16,
+              "endTime": 16.375,
+              "score": 0.07540575103202861,
+              "confidence": 0.9245942489679714,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.051664745328236235,
+                "motionMismatch": 0.07888218864849625,
+                "appearanceMismatch": 0.04896659878863644,
+                "periodicityMismatch": 0.14579451850707612,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.012658059152843983,
+                "seamMotion": 0.04896659878863644,
+                "expectedMotion": 0.012724805025948274,
+                "periodSupport": 470
+              }
+            },
+            {
+              "startFrame": 771,
+              "endFrame": 780,
+              "frameCount": 10,
+              "startTime": 32.125,
+              "endTime": 32.5,
+              "score": 0.07646730307536055,
+              "confidence": 0.9235326969246395,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.05447662210677913,
+                "motionMismatch": 0.07766060662312439,
+                "appearanceMismatch": 0.05395026909759404,
+                "periodicityMismatch": 0.14579451850707612,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.017359951412186516,
+                "seamMotion": 0.05395026909759404,
+                "expectedMotion": 0.017448585361694472,
+                "periodSupport": 470
+              }
+            },
+            {
+              "startFrame": 386,
+              "endFrame": 395,
+              "frameCount": 10,
+              "startTime": 16.083333333333332,
+              "endTime": 16.458333333333332,
+              "score": 0.07779788228036752,
+              "confidence": 0.9222021177196325,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.054161268376982166,
+                "motionMismatch": 0.08443385574189215,
+                "appearanceMismatch": 0.051603015155514916,
+                "periodicityMismatch": 0.14579451850707612,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.01319131528457752,
+                "seamMotion": 0.051603015155514916,
+                "expectedMotion": 0.013159857227926817,
+                "periodSupport": 470
+              }
+            },
+            {
+              "startFrame": 773,
+              "endFrame": 784,
+              "frameCount": 12,
+              "startTime": 32.208333333333336,
+              "endTime": 32.666666666666664,
+              "score": 0.07870669516915725,
+              "confidence": 0.9212933048308427,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.051601422614159065,
+                "motionMismatch": 0.0803822226519369,
+                "appearanceMismatch": 0.051714357358866585,
+                "periodicityMismatch": 0.15722220606320414,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.012212756642343336,
+                "seamMotion": 0.051714357358866585,
+                "expectedMotion": 0.013777204546842278,
+                "periodSupport": 468
+              }
+            },
+            {
+              "startFrame": 388,
+              "endFrame": 397,
+              "frameCount": 10,
+              "startTime": 16.166666666666668,
+              "endTime": 16.541666666666668,
+              "score": 0.07936288659738325,
+              "confidence": 0.9206371134026168,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.0559738571655315,
+                "motionMismatch": 0.08788023259761446,
+                "appearanceMismatch": 0.05312293619970998,
+                "periodicityMismatch": 0.14579451850707612,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.013523393072782643,
+                "seamMotion": 0.05312293619970998,
+                "expectedMotion": 0.01342448850503443,
+                "periodSupport": 470
+              }
+            },
+            {
+              "startFrame": 390,
+              "endFrame": 399,
+              "frameCount": 10,
+              "startTime": 16.25,
+              "endTime": 16.625,
+              "score": 0.0803812151011792,
+              "confidence": 0.9196187848988208,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.056840749544307026,
+                "motionMismatch": 0.09047370378848521,
+                "appearanceMismatch": 0.054387336314751136,
+                "periodicityMismatch": 0.14579451850707612,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.013669880315487583,
+                "seamMotion": 0.054387336314751136,
+                "expectedMotion": 0.01352408847197993,
+                "periodSupport": 470
+              }
+            },
+            {
+              "startFrame": 775,
+              "endFrame": 784,
+              "frameCount": 10,
+              "startTime": 32.291666666666664,
+              "endTime": 32.666666666666664,
+              "score": 0.08074242951892885,
+              "confidence": 0.9192575704810712,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.04523356757461101,
+                "motionMismatch": 0.07181579766196086,
+                "appearanceMismatch": 0.04521280421417635,
+                "periodicityMismatch": 0.14579451850707612,
+                "staticPenalty": 0.1586586054309687,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.010096096734828376,
+                "seamMotion": 0.04521280421417635,
+                "expectedMotion": 0.011285591183133263,
+                "periodSupport": 470
+              }
+            }
+          ],
+          "dominantPeriods": [
+            {
+              "periodFrames": 10,
+              "mismatch": 0.04556078703346128,
+              "confidence": 0.8542054814929239,
+              "support": 470
+            },
+            {
+              "periodFrames": 12,
+              "mismatch": 0.04913193939475129,
+              "confidence": 0.8427777939367959,
+              "support": 468
+            },
+            {
+              "periodFrames": 14,
+              "mismatch": 0.0520109654606827,
+              "confidence": 0.8335649105258154,
+              "support": 466
+            },
+            {
+              "periodFrames": 16,
+              "mismatch": 0.05439241129779191,
+              "confidence": 0.8259442838470659,
+              "support": 464
+            },
+            {
+              "periodFrames": 18,
+              "mismatch": 0.05643955465010573,
+              "confidence": 0.8193934251196616,
+              "support": 462
+            }
+          ],
+          "sceneCuts": [],
+          "duplicateGroups": [
+            {
+              "startFrame": 385,
+              "endFrame": 388,
+              "frameCount": 4
+            },
+            {
+              "startFrame": 406,
+              "endFrame": 407,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 408,
+              "endFrame": 438,
+              "frameCount": 31
+            },
+            {
+              "startFrame": 439,
+              "endFrame": 453,
+              "frameCount": 15
+            },
+            {
+              "startFrame": 454,
+              "endFrame": 455,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 468,
+              "endFrame": 469,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 470,
+              "endFrame": 520,
+              "frameCount": 51
+            },
+            {
+              "startFrame": 532,
+              "endFrame": 584,
+              "frameCount": 53
+            },
+            {
+              "startFrame": 585,
+              "endFrame": 611,
+              "frameCount": 27
+            },
+            {
+              "startFrame": 612,
+              "endFrame": 623,
+              "frameCount": 12
+            },
+            {
+              "startFrame": 624,
+              "endFrame": 625,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 626,
+              "endFrame": 627,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 628,
+              "endFrame": 695,
+              "frameCount": 68
+            },
+            {
+              "startFrame": 696,
+              "endFrame": 730,
+              "frameCount": 35
+            },
+            {
+              "startFrame": 731,
+              "endFrame": 761,
+              "frameCount": 31
+            },
+            {
+              "startFrame": 778,
+              "endFrame": 829,
+              "frameCount": 52
+            },
+            {
+              "startFrame": 844,
+              "endFrame": 845,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 846,
+              "endFrame": 863,
+              "frameCount": 18
+            }
+          ],
+          "segments": [
+            {
+              "startFrame": 384,
+              "endFrame": 863,
+              "startTime": 16,
+              "endTime": 35.958333333333336,
+              "sampledFrames": 480,
+              "candidateCount": 8
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "startFrame": 768,
+          "endFrame": 1247,
+          "startTime": 32,
+          "endTime": 51.958333333333336,
+          "sampledFrames": 480,
+          "candidates": [
+            {
+              "startFrame": 1124,
+              "endFrame": 1146,
+              "frameCount": 23,
+              "startTime": 46.833333333333336,
+              "endTime": 47.75,
+              "score": 0.04870131398052748,
+              "confidence": 0.9512986860194725,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.023761781970178742,
+                "motionMismatch": 0.011012601250941051,
+                "appearanceMismatch": 0.02689023984141441,
+                "periodicityMismatch": 0.14928360259636542,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.020588142104356718,
+                "seamMotion": 0.02689023984141441,
+                "expectedMotion": 0.02193616439450373,
+                "periodSupport": 457
+              }
+            },
+            {
+              "startFrame": 1125,
+              "endFrame": 1148,
+              "frameCount": 24,
+              "startTime": 46.875,
+              "endTime": 47.833333333333336,
+              "score": 0.05145224730333045,
+              "confidence": 0.9485477526966696,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.031139089950301818,
+                "motionMismatch": 0.009717309669914765,
+                "appearanceMismatch": 0.024736684442635205,
+                "periodicityMismatch": 0.15230778185015614,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.02050788591559654,
+                "seamMotion": 0.024736684442635205,
+                "expectedMotion": 0.020675050435786033,
+                "periodSupport": 456
+              }
+            },
+            {
+              "startFrame": 1122,
+              "endFrame": 1144,
+              "frameCount": 23,
+              "startTime": 46.75,
+              "endTime": 47.666666666666664,
+              "score": 0.05162779789169938,
+              "confidence": 0.9483722021083006,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.02661171105884916,
+                "motionMismatch": 0.01803521563354469,
+                "appearanceMismatch": 0.030291246956402958,
+                "periodicityMismatch": 0.14928360259636542,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.020496544965100814,
+                "seamMotion": 0.030291246956402958,
+                "expectedMotion": 0.022021792855471116,
+                "periodSupport": 457
+              }
+            },
+            {
+              "startFrame": 1093,
+              "endFrame": 1114,
+              "frameCount": 22,
+              "startTime": 45.541666666666664,
+              "endTime": 46.416666666666664,
+              "score": 0.05174080419463472,
+              "confidence": 0.9482591958053653,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.027711871093297938,
+                "motionMismatch": 0.019510390345693882,
+                "appearanceMismatch": 0.02797534733926527,
+                "periodicityMismatch": 0.1474926939700236,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.020866182899288706,
+                "seamMotion": 0.02797534733926527,
+                "expectedMotion": 0.018888760575009444,
+                "periodSupport": 458
+              }
+            },
+            {
+              "startFrame": 1100,
+              "endFrame": 1122,
+              "frameCount": 23,
+              "startTime": 45.833333333333336,
+              "endTime": 46.75,
+              "score": 0.052592557300367555,
+              "confidence": 0.9474074426996324,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.030057098025337646,
+                "motionMismatch": 0.017150963651870278,
+                "appearanceMismatch": 0.03036060090220233,
+                "periodicityMismatch": 0.14928360259636542,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.02065090114346758,
+                "seamMotion": 0.03036060090220233,
+                "expectedMotion": 0.022651796037260766,
+                "periodSupport": 457
+              }
+            },
+            {
+              "startFrame": 1095,
+              "endFrame": 1115,
+              "frameCount": 21,
+              "startTime": 45.625,
+              "endTime": 46.458333333333336,
+              "score": 0.05278082785852148,
+              "confidence": 0.9472191721414785,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.02883968964645244,
+                "motionMismatch": 0.022294075930052948,
+                "appearanceMismatch": 0.02971941177601905,
+                "periodicityMismatch": 0.1468633425559726,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.021209904147059876,
+                "seamMotion": 0.02971941177601905,
+                "expectedMotion": 0.01947172856577506,
+                "periodSupport": 459
+              }
+            },
+            {
+              "startFrame": 1103,
+              "endFrame": 1124,
+              "frameCount": 22,
+              "startTime": 45.958333333333336,
+              "endTime": 46.833333333333336,
+              "score": 0.05288557349584429,
+              "confidence": 0.9471144265041557,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.03143320850259956,
+                "motionMismatch": 0.018066999011165343,
+                "appearanceMismatch": 0.030799453618438544,
+                "periodicityMismatch": 0.1474926939700236,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.020739789618092235,
+                "seamMotion": 0.030799453618438544,
+                "expectedMotion": 0.02277197137709512,
+                "periodSupport": 458
+              }
+            },
+            {
+              "startFrame": 1105,
+              "endFrame": 1126,
+              "frameCount": 22,
+              "startTime": 46.041666666666664,
+              "endTime": 46.916666666666664,
+              "score": 0.05328676030617181,
+              "confidence": 0.9467132396938281,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.03325712148620252,
+                "motionMismatch": 0.01734195094901782,
+                "appearanceMismatch": 0.03023780275366261,
+                "periodicityMismatch": 0.1474926939700236,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.02079939587886804,
+                "seamMotion": 0.03023780275366261,
+                "expectedMotion": 0.0226318509305834,
+                "periodSupport": 458
+              }
+            }
+          ],
+          "dominantPeriods": [
+            {
+              "periodFrames": 10,
+              "mismatch": 0.04016249939256521,
+              "confidence": 0.8714800019437914,
+              "support": 470
+            },
+            {
+              "periodFrames": 12,
+              "mismatch": 0.04221444961959794,
+              "confidence": 0.8649137612172866,
+              "support": 468
+            },
+            {
+              "periodFrames": 14,
+              "mismatch": 0.04392127828090522,
+              "confidence": 0.8594519095011033,
+              "support": 466
+            },
+            {
+              "periodFrames": 16,
+              "mismatch": 0.04513170631342232,
+              "confidence": 0.8555785397970486,
+              "support": 464
+            },
+            {
+              "periodFrames": 18,
+              "mismatch": 0.04569800474492408,
+              "confidence": 0.8537663848162429,
+              "support": 462
+            }
+          ],
+          "sceneCuts": [],
+          "duplicateGroups": [
+            {
+              "startFrame": 778,
+              "endFrame": 829,
+              "frameCount": 52
+            },
+            {
+              "startFrame": 844,
+              "endFrame": 845,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 846,
+              "endFrame": 876,
+              "frameCount": 31
+            },
+            {
+              "startFrame": 877,
+              "endFrame": 1022,
+              "frameCount": 146
+            },
+            {
+              "startFrame": 1023,
+              "endFrame": 1033,
+              "frameCount": 11
+            },
+            {
+              "startFrame": 1034,
+              "endFrame": 1035,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1036,
+              "endFrame": 1037,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1038,
+              "endFrame": 1039,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1040,
+              "endFrame": 1041,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1042,
+              "endFrame": 1043,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1044,
+              "endFrame": 1045,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1046,
+              "endFrame": 1055,
+              "frameCount": 10
+            },
+            {
+              "startFrame": 1056,
+              "endFrame": 1057,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1058,
+              "endFrame": 1059,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1060,
+              "endFrame": 1061,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1062,
+              "endFrame": 1063,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1064,
+              "endFrame": 1065,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1066,
+              "endFrame": 1067,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1068,
+              "endFrame": 1081,
+              "frameCount": 14
+            },
+            {
+              "startFrame": 1082,
+              "endFrame": 1083,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1084,
+              "endFrame": 1085,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1086,
+              "endFrame": 1087,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1092,
+              "endFrame": 1093,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1094,
+              "endFrame": 1095,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1167,
+              "endFrame": 1168,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1169,
+              "endFrame": 1246,
+              "frameCount": 78
+            }
+          ],
+          "segments": [
+            {
+              "startFrame": 768,
+              "endFrame": 1247,
+              "startTime": 32,
+              "endTime": 51.958333333333336,
+              "sampledFrames": 480,
+              "candidateCount": 8
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "startFrame": 1152,
+          "endFrame": 1313,
+          "startTime": 48,
+          "endTime": 54.708333333333336,
+          "sampledFrames": 162,
+          "candidates": [
+            {
+              "startFrame": 1152,
+              "endFrame": 1164,
+              "frameCount": 13,
+              "startTime": 48,
+              "endTime": 48.5,
+              "score": 0.06877279006427645,
+              "confidence": 0.9312272099357235,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.04517328602584277,
+                "motionMismatch": 0.04940691577589691,
+                "appearanceMismatch": 0.04593653123435712,
+                "periodicityMismatch": 0.15783871054385867,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.020855552409857064,
+                "seamMotion": 0.04593653123435712,
+                "expectedMotion": 0.023716766617577247,
+                "periodSupport": 149
+              }
+            },
+            {
+              "startFrame": 1154,
+              "endFrame": 1163,
+              "frameCount": 10,
+              "startTime": 48.083333333333336,
+              "endTime": 48.458333333333336,
+              "score": 0.06903323246221392,
+              "confidence": 0.9309667675377861,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.049929289953347944,
+                "motionMismatch": 0.059097493750019256,
+                "appearanceMismatch": 0.046586828228547615,
+                "periodicityMismatch": 0.14227887133244663,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.01896573506508971,
+                "seamMotion": 0.046586828228547615,
+                "expectedMotion": 0.01983100806544062,
+                "periodSupport": 152
+              }
+            },
+            {
+              "startFrame": 1152,
+              "endFrame": 1166,
+              "frameCount": 15,
+              "startTime": 48,
+              "endTime": 48.583333333333336,
+              "score": 0.07236257074396127,
+              "confidence": 0.9276374292560388,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.049044900522043834,
+                "motionMismatch": 0.04889327441888507,
+                "appearanceMismatch": 0.04786742067605737,
+                "periodicityMismatch": 0.16718135438270565,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.021488141809509368,
+                "seamMotion": 0.04786742067605737,
+                "expectedMotion": 0.025219589637008842,
+                "periodSupport": 147
+              }
+            },
+            {
+              "startFrame": 1152,
+              "endFrame": 1162,
+              "frameCount": 11,
+              "startTime": 48,
+              "endTime": 48.416666666666664,
+              "score": 0.07483797554887736,
+              "confidence": 0.9251620244511226,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.05151026102380099,
+                "motionMismatch": 0.07287043019742544,
+                "appearanceMismatch": 0.05428645722553726,
+                "periodicityMismatch": 0.14788611239733304,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.020386692242011468,
+                "seamMotion": 0.05428645722553726,
+                "expectedMotion": 0.021037823954290952,
+                "periodSupport": 151
+              }
+            },
+            {
+              "startFrame": 1154,
+              "endFrame": 1165,
+              "frameCount": 12,
+              "startTime": 48.083333333333336,
+              "endTime": 48.541666666666664,
+              "score": 0.07610912440341584,
+              "confidence": 0.9238908755965841,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.05586848171948776,
+                "motionMismatch": 0.06728756075083667,
+                "appearanceMismatch": 0.05317518793692045,
+                "periodicityMismatch": 0.15296171251514817,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.020134518260645884,
+                "seamMotion": 0.05317518793692045,
+                "expectedMotion": 0.022083111977870367,
+                "periodSupport": 150
+              }
+            },
+            {
+              "startFrame": 1156,
+              "endFrame": 1165,
+              "frameCount": 10,
+              "startTime": 48.166666666666664,
+              "endTime": 48.541666666666664,
+              "score": 0.07717439737381028,
+              "confidence": 0.9228256026261897,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.05906145567521357,
+                "motionMismatch": 0.07697510228451585,
+                "appearanceMismatch": 0.05590685970208353,
+                "periodicityMismatch": 0.14227887133244663,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.019283402212013648,
+                "seamMotion": 0.05590685970208353,
+                "expectedMotion": 0.019863093391258288,
+                "periodSupport": 152
+              }
+            },
+            {
+              "startFrame": 1154,
+              "endFrame": 1167,
+              "frameCount": 14,
+              "startTime": 48.083333333333336,
+              "endTime": 48.625,
+              "score": 0.07987955907086842,
+              "confidence": 0.9201204409291316,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.056050882737765206,
+                "motionMismatch": 0.07218036672031986,
+                "appearanceMismatch": 0.056050882737765206,
+                "periodicityMismatch": 0.16256208461720947,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.020651908706952313,
+                "seamMotion": 0.056050882737765206,
+                "expectedMotion": 0.02218234628205458,
+                "periodSupport": 148
+              }
+            },
+            {
+              "startFrame": 1156,
+              "endFrame": 1167,
+              "frameCount": 12,
+              "startTime": 48.166666666666664,
+              "endTime": 48.625,
+              "score": 0.08250956497888007,
+              "confidence": 0.9174904350211199,
+              "suggestsDropLastFrame": false,
+              "diagnostics": {
+                "closure": 0.06008820519384566,
+                "motionMismatch": 0.0856737824742889,
+                "appearanceMismatch": 0.06008820519384566,
+                "periodicityMismatch": 0.15296171251514817,
+                "staticPenalty": 0,
+                "duplicatePenalty": 0,
+                "meanMotion": 0.0200496120210362,
+                "seamMotion": 0.06008820519384566,
+                "expectedMotion": 0.0199623276954425,
+                "periodSupport": 150
+              }
+            }
+          ],
+          "dominantPeriods": [
+            {
+              "periodFrames": 10,
+              "mismatch": 0.044462147291389566,
+              "confidence": 0.8577211286675533,
+              "support": 152
+            },
+            {
+              "periodFrames": 12,
+              "mismatch": 0.0478005351609838,
+              "confidence": 0.8470382874848519,
+              "support": 150
+            },
+            {
+              "periodFrames": 14,
+              "mismatch": 0.05080065144287796,
+              "confidence": 0.8374379153827906,
+              "support": 148
+            },
+            {
+              "periodFrames": 16,
+              "mismatch": 0.05369215950129432,
+              "confidence": 0.8281850895958581,
+              "support": 146
+            },
+            {
+              "periodFrames": 18,
+              "mismatch": 0.056323850264066694,
+              "confidence": 0.8197636791549866,
+              "support": 144
+            }
+          ],
+          "sceneCuts": [],
+          "duplicateGroups": [
+            {
+              "startFrame": 1167,
+              "endFrame": 1168,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1169,
+              "endFrame": 1246,
+              "frameCount": 78
+            },
+            {
+              "startFrame": 1247,
+              "endFrame": 1248,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1249,
+              "endFrame": 1250,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1251,
+              "endFrame": 1252,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1253,
+              "endFrame": 1254,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1255,
+              "endFrame": 1256,
+              "frameCount": 2
+            },
+            {
+              "startFrame": 1257,
+              "endFrame": 1313,
+              "frameCount": 57
+            }
+          ],
+          "segments": [
+            {
+              "startFrame": 1152,
+              "endFrame": 1313,
+              "startTime": 48,
+              "endTime": 54.708333333333336,
+              "sampledFrames": 162,
+              "candidateCount": 8
+            }
+          ]
+        }
+      ]
+    },
+    "candidatePage": {
+      "offset": 0,
+      "limit": 200,
+      "hasMore": false,
+      "items": [
+        {
+          "startFrame": 279,
+          "endFrame": 288,
+          "frameCount": 10,
+          "startTime": 11.625,
+          "endTime": 12,
+          "score": 0.04546968795864323,
+          "confidence": 0.9545303120413567,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.021619591466280574,
+            "motionMismatch": 0.002881233286918529,
+            "appearanceMismatch": 0.02780804848767279,
+            "periodicityMismatch": 0.14667869580097317,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.027891784969477702,
+            "seamMotion": 0.02780804848767279,
+            "expectedMotion": 0.028736555136655323,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 187,
+          "endFrame": 206,
+          "frameCount": 20,
+          "startTime": 7.791666666666667,
+          "endTime": 8.583333333333334,
+          "score": 0.04690497387876903,
+          "confidence": 0.953095026121231,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.010659978422394405,
+            "motionMismatch": 0.0013054039420152168,
+            "appearanceMismatch": 0.0273532849332815,
+            "periodicityMismatch": 0.16991258947670318,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.02857165492258602,
+            "seamMotion": 0.0273532849332815,
+            "expectedMotion": 0.02773167218840321,
+            "periodSupport": 460
+          }
+        },
+        {
+          "startFrame": 264,
+          "endFrame": 275,
+          "frameCount": 12,
+          "startTime": 11,
+          "endTime": 11.458333333333334,
+          "score": 0.04863956645868213,
+          "confidence": 0.9513604335413178,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.022353656014995664,
+            "motionMismatch": 0.0011909831684865165,
+            "appearanceMismatch": 0.028753246614393307,
+            "periodicityMismatch": 0.16022178218331404,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.027500065858412522,
+            "seamMotion": 0.028753246614393307,
+            "expectedMotion": 0.029100466428018182,
+            "periodSupport": 468
+          }
+        },
+        {
+          "startFrame": 1124,
+          "endFrame": 1146,
+          "frameCount": 23,
+          "startTime": 46.833333333333336,
+          "endTime": 47.75,
+          "score": 0.04870131398052748,
+          "confidence": 0.9512986860194725,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.023761781970178742,
+            "motionMismatch": 0.011012601250941051,
+            "appearanceMismatch": 0.02689023984141441,
+            "periodicityMismatch": 0.14928360259636542,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.020588142104356718,
+            "seamMotion": 0.02689023984141441,
+            "expectedMotion": 0.02193616439450373,
+            "periodSupport": 457
+          }
+        },
+        {
+          "startFrame": 201,
+          "endFrame": 220,
+          "frameCount": 20,
+          "startTime": 8.375,
+          "endTime": 9.166666666666666,
+          "score": 0.04939569424987392,
+          "confidence": 0.9506043057501261,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.015117397953397121,
+            "motionMismatch": 0.005543627502706593,
+            "appearanceMismatch": 0.026828585883256904,
+            "periodicityMismatch": 0.16991258947670318,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.027698212614879737,
+            "seamMotion": 0.026828585883256904,
+            "expectedMotion": 0.028686222959858974,
+            "periodSupport": 460
+          }
+        },
+        {
+          "startFrame": 215,
+          "endFrame": 224,
+          "frameCount": 10,
+          "startTime": 8.958333333333334,
+          "endTime": 9.333333333333334,
+          "score": 0.05015968402221495,
+          "confidence": 0.9498403159777851,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.03333629215097715,
+            "motionMismatch": 0.004712710150242034,
+            "appearanceMismatch": 0.03114259078238831,
+            "periodicityMismatch": 0.14667869580097317,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.027797605555994358,
+            "seamMotion": 0.03114259078238831,
+            "expectedMotion": 0.029531522019219908,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 203,
+          "endFrame": 222,
+          "frameCount": 20,
+          "startTime": 8.458333333333334,
+          "endTime": 9.25,
+          "score": 0.050280443292149174,
+          "confidence": 0.9497195567078508,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.016065742776217102,
+            "motionMismatch": 0.008391103662743513,
+            "appearanceMismatch": 0.02531505493460186,
+            "periodicityMismatch": 0.16991258947670318,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.02744946403328174,
+            "seamMotion": 0.02531505493460186,
+            "expectedMotion": 0.02893954553409093,
+            "periodSupport": 460
+          }
+        },
+        {
+          "startFrame": 184,
+          "endFrame": 203,
+          "frameCount": 20,
+          "startTime": 7.666666666666667,
+          "endTime": 8.458333333333334,
+          "score": 0.050407879287030305,
+          "confidence": 0.9495921207129697,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.016230962222143916,
+            "motionMismatch": 0.009055952188181731,
+            "appearanceMismatch": 0.024211276649112465,
+            "periodicityMismatch": 0.16991258947670318,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.028396207875201012,
+            "seamMotion": 0.024211276649112465,
+            "expectedMotion": 0.028304542492733176,
+            "periodSupport": 460
+          }
+        },
+        {
+          "startFrame": 190,
+          "endFrame": 209,
+          "frameCount": 20,
+          "startTime": 7.916666666666667,
+          "endTime": 8.708333333333334,
+          "score": 0.05055692108879602,
+          "confidence": 0.9494430789112039,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.02075041366642143,
+            "motionMismatch": 0.001901398381814849,
+            "appearanceMismatch": 0.028330291952105024,
+            "periodicityMismatch": 0.16991258947670318,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.02890455159724211,
+            "seamMotion": 0.028330291952105024,
+            "expectedMotion": 0.028904322152564985,
+            "periodSupport": 460
+          }
+        },
+        {
+          "startFrame": 1125,
+          "endFrame": 1148,
+          "frameCount": 24,
+          "startTime": 46.875,
+          "endTime": 47.833333333333336,
+          "score": 0.05145224730333045,
+          "confidence": 0.9485477526966696,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.031139089950301818,
+            "motionMismatch": 0.009717309669914765,
+            "appearanceMismatch": 0.024736684442635205,
+            "periodicityMismatch": 0.15230778185015614,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.02050788591559654,
+            "seamMotion": 0.024736684442635205,
+            "expectedMotion": 0.020675050435786033,
+            "periodSupport": 456
+          }
+        },
+        {
+          "startFrame": 1122,
+          "endFrame": 1144,
+          "frameCount": 23,
+          "startTime": 46.75,
+          "endTime": 47.666666666666664,
+          "score": 0.05162779789169938,
+          "confidence": 0.9483722021083006,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.02661171105884916,
+            "motionMismatch": 0.01803521563354469,
+            "appearanceMismatch": 0.030291246956402958,
+            "periodicityMismatch": 0.14928360259636542,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.020496544965100814,
+            "seamMotion": 0.030291246956402958,
+            "expectedMotion": 0.022021792855471116,
+            "periodSupport": 457
+          }
+        },
+        {
+          "startFrame": 1093,
+          "endFrame": 1114,
+          "frameCount": 22,
+          "startTime": 45.541666666666664,
+          "endTime": 46.416666666666664,
+          "score": 0.05174080419463472,
+          "confidence": 0.9482591958053653,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.027711871093297938,
+            "motionMismatch": 0.019510390345693882,
+            "appearanceMismatch": 0.02797534733926527,
+            "periodicityMismatch": 0.1474926939700236,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.020866182899288706,
+            "seamMotion": 0.02797534733926527,
+            "expectedMotion": 0.018888760575009444,
+            "periodSupport": 458
+          }
+        },
+        {
+          "startFrame": 1100,
+          "endFrame": 1122,
+          "frameCount": 23,
+          "startTime": 45.833333333333336,
+          "endTime": 46.75,
+          "score": 0.052592557300367555,
+          "confidence": 0.9474074426996324,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.030057098025337646,
+            "motionMismatch": 0.017150963651870278,
+            "appearanceMismatch": 0.03036060090220233,
+            "periodicityMismatch": 0.14928360259636542,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.02065090114346758,
+            "seamMotion": 0.03036060090220233,
+            "expectedMotion": 0.022651796037260766,
+            "periodSupport": 457
+          }
+        },
+        {
+          "startFrame": 1095,
+          "endFrame": 1115,
+          "frameCount": 21,
+          "startTime": 45.625,
+          "endTime": 46.458333333333336,
+          "score": 0.05278082785852148,
+          "confidence": 0.9472191721414785,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.02883968964645244,
+            "motionMismatch": 0.022294075930052948,
+            "appearanceMismatch": 0.02971941177601905,
+            "periodicityMismatch": 0.1468633425559726,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.021209904147059876,
+            "seamMotion": 0.02971941177601905,
+            "expectedMotion": 0.01947172856577506,
+            "periodSupport": 459
+          }
+        },
+        {
+          "startFrame": 1103,
+          "endFrame": 1124,
+          "frameCount": 22,
+          "startTime": 45.958333333333336,
+          "endTime": 46.833333333333336,
+          "score": 0.05288557349584429,
+          "confidence": 0.9471144265041557,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.03143320850259956,
+            "motionMismatch": 0.018066999011165343,
+            "appearanceMismatch": 0.030799453618438544,
+            "periodicityMismatch": 0.1474926939700236,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.020739789618092235,
+            "seamMotion": 0.030799453618438544,
+            "expectedMotion": 0.02277197137709512,
+            "periodSupport": 458
+          }
+        },
+        {
+          "startFrame": 1105,
+          "endFrame": 1126,
+          "frameCount": 22,
+          "startTime": 46.041666666666664,
+          "endTime": 46.916666666666664,
+          "score": 0.05328676030617181,
+          "confidence": 0.9467132396938281,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.03325712148620252,
+            "motionMismatch": 0.01734195094901782,
+            "appearanceMismatch": 0.03023780275366261,
+            "periodicityMismatch": 0.1474926939700236,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.02079939587886804,
+            "seamMotion": 0.03023780275366261,
+            "expectedMotion": 0.0226318509305834,
+            "periodSupport": 458
+          }
+        },
+        {
+          "startFrame": 1152,
+          "endFrame": 1164,
+          "frameCount": 13,
+          "startTime": 48,
+          "endTime": 48.5,
+          "score": 0.06877279006427645,
+          "confidence": 0.9312272099357235,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.04517328602584277,
+            "motionMismatch": 0.04940691577589691,
+            "appearanceMismatch": 0.04593653123435712,
+            "periodicityMismatch": 0.15783871054385867,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.020855552409857064,
+            "seamMotion": 0.04593653123435712,
+            "expectedMotion": 0.023716766617577247,
+            "periodSupport": 149
+          }
+        },
+        {
+          "startFrame": 1154,
+          "endFrame": 1163,
+          "frameCount": 10,
+          "startTime": 48.083333333333336,
+          "endTime": 48.458333333333336,
+          "score": 0.06903323246221392,
+          "confidence": 0.9309667675377861,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.049929289953347944,
+            "motionMismatch": 0.059097493750019256,
+            "appearanceMismatch": 0.046586828228547615,
+            "periodicityMismatch": 0.14227887133244663,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.01896573506508971,
+            "seamMotion": 0.046586828228547615,
+            "expectedMotion": 0.01983100806544062,
+            "periodSupport": 152
+          }
+        },
+        {
+          "startFrame": 1152,
+          "endFrame": 1166,
+          "frameCount": 15,
+          "startTime": 48,
+          "endTime": 48.583333333333336,
+          "score": 0.07236257074396127,
+          "confidence": 0.9276374292560388,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.049044900522043834,
+            "motionMismatch": 0.04889327441888507,
+            "appearanceMismatch": 0.04786742067605737,
+            "periodicityMismatch": 0.16718135438270565,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.021488141809509368,
+            "seamMotion": 0.04786742067605737,
+            "expectedMotion": 0.025219589637008842,
+            "periodSupport": 147
+          }
+        },
+        {
+          "startFrame": 1152,
+          "endFrame": 1162,
+          "frameCount": 11,
+          "startTime": 48,
+          "endTime": 48.416666666666664,
+          "score": 0.07483797554887736,
+          "confidence": 0.9251620244511226,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.05151026102380099,
+            "motionMismatch": 0.07287043019742544,
+            "appearanceMismatch": 0.05428645722553726,
+            "periodicityMismatch": 0.14788611239733304,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.020386692242011468,
+            "seamMotion": 0.05428645722553726,
+            "expectedMotion": 0.021037823954290952,
+            "periodSupport": 151
+          }
+        },
+        {
+          "startFrame": 773,
+          "endFrame": 782,
+          "frameCount": 10,
+          "startTime": 32.208333333333336,
+          "endTime": 32.583333333333336,
+          "score": 0.0752074571431293,
+          "confidence": 0.9247925428568707,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.05146726049602586,
+            "motionMismatch": 0.07761581743106011,
+            "appearanceMismatch": 0.05112634936659777,
+            "periodicityMismatch": 0.14579451850707612,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.013837826793178416,
+            "seamMotion": 0.05112634936659777,
+            "expectedMotion": 0.014680732586703328,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 384,
+          "endFrame": 393,
+          "frameCount": 10,
+          "startTime": 16,
+          "endTime": 16.375,
+          "score": 0.07540575103202861,
+          "confidence": 0.9245942489679714,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.051664745328236235,
+            "motionMismatch": 0.07888218864849625,
+            "appearanceMismatch": 0.04896659878863644,
+            "periodicityMismatch": 0.14579451850707612,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.012658059152843983,
+            "seamMotion": 0.04896659878863644,
+            "expectedMotion": 0.012724805025948274,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 1154,
+          "endFrame": 1165,
+          "frameCount": 12,
+          "startTime": 48.083333333333336,
+          "endTime": 48.541666666666664,
+          "score": 0.07610912440341584,
+          "confidence": 0.9238908755965841,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.05586848171948776,
+            "motionMismatch": 0.06728756075083667,
+            "appearanceMismatch": 0.05317518793692045,
+            "periodicityMismatch": 0.15296171251514817,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.020134518260645884,
+            "seamMotion": 0.05317518793692045,
+            "expectedMotion": 0.022083111977870367,
+            "periodSupport": 150
+          }
+        },
+        {
+          "startFrame": 771,
+          "endFrame": 780,
+          "frameCount": 10,
+          "startTime": 32.125,
+          "endTime": 32.5,
+          "score": 0.07646730307536055,
+          "confidence": 0.9235326969246395,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.05447662210677913,
+            "motionMismatch": 0.07766060662312439,
+            "appearanceMismatch": 0.05395026909759404,
+            "periodicityMismatch": 0.14579451850707612,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.017359951412186516,
+            "seamMotion": 0.05395026909759404,
+            "expectedMotion": 0.017448585361694472,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 1156,
+          "endFrame": 1165,
+          "frameCount": 10,
+          "startTime": 48.166666666666664,
+          "endTime": 48.541666666666664,
+          "score": 0.07717439737381028,
+          "confidence": 0.9228256026261897,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.05906145567521357,
+            "motionMismatch": 0.07697510228451585,
+            "appearanceMismatch": 0.05590685970208353,
+            "periodicityMismatch": 0.14227887133244663,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.019283402212013648,
+            "seamMotion": 0.05590685970208353,
+            "expectedMotion": 0.019863093391258288,
+            "periodSupport": 152
+          }
+        },
+        {
+          "startFrame": 386,
+          "endFrame": 395,
+          "frameCount": 10,
+          "startTime": 16.083333333333332,
+          "endTime": 16.458333333333332,
+          "score": 0.07779788228036752,
+          "confidence": 0.9222021177196325,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.054161268376982166,
+            "motionMismatch": 0.08443385574189215,
+            "appearanceMismatch": 0.051603015155514916,
+            "periodicityMismatch": 0.14579451850707612,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.01319131528457752,
+            "seamMotion": 0.051603015155514916,
+            "expectedMotion": 0.013159857227926817,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 773,
+          "endFrame": 784,
+          "frameCount": 12,
+          "startTime": 32.208333333333336,
+          "endTime": 32.666666666666664,
+          "score": 0.07870669516915725,
+          "confidence": 0.9212933048308427,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.051601422614159065,
+            "motionMismatch": 0.0803822226519369,
+            "appearanceMismatch": 0.051714357358866585,
+            "periodicityMismatch": 0.15722220606320414,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.012212756642343336,
+            "seamMotion": 0.051714357358866585,
+            "expectedMotion": 0.013777204546842278,
+            "periodSupport": 468
+          }
+        },
+        {
+          "startFrame": 388,
+          "endFrame": 397,
+          "frameCount": 10,
+          "startTime": 16.166666666666668,
+          "endTime": 16.541666666666668,
+          "score": 0.07936288659738325,
+          "confidence": 0.9206371134026168,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.0559738571655315,
+            "motionMismatch": 0.08788023259761446,
+            "appearanceMismatch": 0.05312293619970998,
+            "periodicityMismatch": 0.14579451850707612,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.013523393072782643,
+            "seamMotion": 0.05312293619970998,
+            "expectedMotion": 0.01342448850503443,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 1154,
+          "endFrame": 1167,
+          "frameCount": 14,
+          "startTime": 48.083333333333336,
+          "endTime": 48.625,
+          "score": 0.07987955907086842,
+          "confidence": 0.9201204409291316,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.056050882737765206,
+            "motionMismatch": 0.07218036672031986,
+            "appearanceMismatch": 0.056050882737765206,
+            "periodicityMismatch": 0.16256208461720947,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.020651908706952313,
+            "seamMotion": 0.056050882737765206,
+            "expectedMotion": 0.02218234628205458,
+            "periodSupport": 148
+          }
+        },
+        {
+          "startFrame": 390,
+          "endFrame": 399,
+          "frameCount": 10,
+          "startTime": 16.25,
+          "endTime": 16.625,
+          "score": 0.0803812151011792,
+          "confidence": 0.9196187848988208,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.056840749544307026,
+            "motionMismatch": 0.09047370378848521,
+            "appearanceMismatch": 0.054387336314751136,
+            "periodicityMismatch": 0.14579451850707612,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.013669880315487583,
+            "seamMotion": 0.054387336314751136,
+            "expectedMotion": 0.01352408847197993,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 775,
+          "endFrame": 784,
+          "frameCount": 10,
+          "startTime": 32.291666666666664,
+          "endTime": 32.666666666666664,
+          "score": 0.08074242951892885,
+          "confidence": 0.9192575704810712,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.04523356757461101,
+            "motionMismatch": 0.07181579766196086,
+            "appearanceMismatch": 0.04521280421417635,
+            "periodicityMismatch": 0.14579451850707612,
+            "staticPenalty": 0.1586586054309687,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.010096096734828376,
+            "seamMotion": 0.04521280421417635,
+            "expectedMotion": 0.011285591183133263,
+            "periodSupport": 470
+          }
+        },
+        {
+          "startFrame": 1156,
+          "endFrame": 1167,
+          "frameCount": 12,
+          "startTime": 48.166666666666664,
+          "endTime": 48.625,
+          "score": 0.08250956497888007,
+          "confidence": 0.9174904350211199,
+          "suggestsDropLastFrame": false,
+          "diagnostics": {
+            "closure": 0.06008820519384566,
+            "motionMismatch": 0.0856737824742889,
+            "appearanceMismatch": 0.06008820519384566,
+            "periodicityMismatch": 0.15296171251514817,
+            "staticPenalty": 0,
+            "duplicatePenalty": 0,
+            "meanMotion": 0.0200496120210362,
+            "seamMotion": 0.06008820519384566,
+            "expectedMotion": 0.0199623276954425,
+            "periodSupport": 150
+          }
+        }
+      ]
+    },
+    "dominantPeriods": [
+      {
+        "periodFrames": 10,
+        "mismatch": 0.04400563153880504,
+        "confidence": 0.8591819790758238,
+        "support": 1562
+      },
+      {
+        "periodFrames": 12,
+        "mismatch": 0.04730405777690466,
+        "confidence": 0.848627015113905,
+        "support": 1554
+      },
+      {
+        "periodFrames": 14,
+        "mismatch": 0.05017247564396057,
+        "confidence": 0.8394480779393262,
+        "support": 1546
+      },
+      {
+        "periodFrames": 16,
+        "mismatch": 0.05107209237083619,
+        "confidence": 0.8365693044133242,
+        "support": 1074
+      },
+      {
+        "periodFrames": 20,
+        "mismatch": 0.053097684211469744,
+        "confidence": 0.8300874105232968,
+        "support": 460
+      },
+      {
+        "periodFrames": 18,
+        "mismatch": 0.0533127742829677,
+        "confidence": 0.8293991222945034,
+        "support": 1530
+      }
+    ],
+    "sceneCuts": [],
+    "duplicateGroups": [
+      {
+        "startFrame": 0,
+        "endFrame": 146,
+        "frameCount": 147
+      },
+      {
+        "startFrame": 147,
+        "endFrame": 149,
+        "frameCount": 3
+      },
+      {
+        "startFrame": 291,
+        "endFrame": 292,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 293,
+        "endFrame": 301,
+        "frameCount": 9
+      },
+      {
+        "startFrame": 309,
+        "endFrame": 326,
+        "frameCount": 18
+      },
+      {
+        "startFrame": 351,
+        "endFrame": 355,
+        "frameCount": 5
+      },
+      {
+        "startFrame": 357,
+        "endFrame": 359,
+        "frameCount": 3
+      },
+      {
+        "startFrame": 360,
+        "endFrame": 376,
+        "frameCount": 17
+      },
+      {
+        "startFrame": 377,
+        "endFrame": 382,
+        "frameCount": 6
+      },
+      {
+        "startFrame": 385,
+        "endFrame": 388,
+        "frameCount": 4
+      },
+      {
+        "startFrame": 406,
+        "endFrame": 407,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 408,
+        "endFrame": 438,
+        "frameCount": 31
+      },
+      {
+        "startFrame": 439,
+        "endFrame": 453,
+        "frameCount": 15
+      },
+      {
+        "startFrame": 454,
+        "endFrame": 455,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 468,
+        "endFrame": 469,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 470,
+        "endFrame": 479,
+        "frameCount": 10
+      },
+      {
+        "startFrame": 470,
+        "endFrame": 520,
+        "frameCount": 51
+      },
+      {
+        "startFrame": 532,
+        "endFrame": 584,
+        "frameCount": 53
+      },
+      {
+        "startFrame": 585,
+        "endFrame": 611,
+        "frameCount": 27
+      },
+      {
+        "startFrame": 612,
+        "endFrame": 623,
+        "frameCount": 12
+      },
+      {
+        "startFrame": 624,
+        "endFrame": 625,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 626,
+        "endFrame": 627,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 628,
+        "endFrame": 695,
+        "frameCount": 68
+      },
+      {
+        "startFrame": 696,
+        "endFrame": 730,
+        "frameCount": 35
+      },
+      {
+        "startFrame": 731,
+        "endFrame": 761,
+        "frameCount": 31
+      },
+      {
+        "startFrame": 778,
+        "endFrame": 829,
+        "frameCount": 52
+      },
+      {
+        "startFrame": 844,
+        "endFrame": 845,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 846,
+        "endFrame": 863,
+        "frameCount": 18
+      },
+      {
+        "startFrame": 846,
+        "endFrame": 876,
+        "frameCount": 31
+      },
+      {
+        "startFrame": 877,
+        "endFrame": 1022,
+        "frameCount": 146
+      },
+      {
+        "startFrame": 1023,
+        "endFrame": 1033,
+        "frameCount": 11
+      },
+      {
+        "startFrame": 1034,
+        "endFrame": 1035,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1036,
+        "endFrame": 1037,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1038,
+        "endFrame": 1039,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1040,
+        "endFrame": 1041,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1042,
+        "endFrame": 1043,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1044,
+        "endFrame": 1045,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1046,
+        "endFrame": 1055,
+        "frameCount": 10
+      },
+      {
+        "startFrame": 1056,
+        "endFrame": 1057,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1058,
+        "endFrame": 1059,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1060,
+        "endFrame": 1061,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1062,
+        "endFrame": 1063,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1064,
+        "endFrame": 1065,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1066,
+        "endFrame": 1067,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1068,
+        "endFrame": 1081,
+        "frameCount": 14
+      },
+      {
+        "startFrame": 1082,
+        "endFrame": 1083,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1084,
+        "endFrame": 1085,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1086,
+        "endFrame": 1087,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1092,
+        "endFrame": 1093,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1094,
+        "endFrame": 1095,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1167,
+        "endFrame": 1168,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1169,
+        "endFrame": 1246,
+        "frameCount": 78
+      },
+      {
+        "startFrame": 1247,
+        "endFrame": 1248,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1249,
+        "endFrame": 1250,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1251,
+        "endFrame": 1252,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1253,
+        "endFrame": 1254,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1255,
+        "endFrame": 1256,
+        "frameCount": 2
+      },
+      {
+        "startFrame": 1257,
+        "endFrame": 1313,
+        "frameCount": 57
+      }
+    ]
+  },
+  "reviewPages": [
+    {
+      "filename": "candidate-page-01.png",
+      "bytes": 542517,
+      "mimeType": "image/png",
+      "offset": 0,
+      "count": 6,
+      "hasMore": true
+    },
+    {
+      "filename": "candidate-page-02.png",
+      "bytes": 542137,
+      "mimeType": "image/png",
+      "offset": 6,
+      "count": 6,
+      "hasMore": true
+    },
+    {
+      "filename": "candidate-page-03.png",
+      "bytes": 531765,
+      "mimeType": "image/png",
+      "offset": 12,
+      "count": 6,
+      "hasMore": true
+    },
+    {
+      "filename": "candidate-page-04.png",
+      "bytes": 505293,
+      "mimeType": "image/png",
+      "offset": 18,
+      "count": 6,
+      "hasMore": true
+    },
+    {
+      "filename": "candidate-page-05.png",
+      "bytes": 516517,
+      "mimeType": "image/png",
+      "offset": 24,
+      "count": 6,
+      "hasMore": true
+    },
+    {
+      "filename": "candidate-page-06.png",
+      "bytes": 164785,
+      "mimeType": "image/png",
+      "offset": 30,
+      "count": 2,
+      "hasMore": false
+    }
+  ],
+  "reviewCandidates": [
+    {
+      "rank": 1,
+      "startFrame": 279,
+      "endFrame": 288,
+      "frameCount": 10,
+      "startTime": 11.625,
+      "endTime": 12,
+      "score": 0.04546968795864323,
+      "confidence": 0.9545303120413567,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.021619591466280574,
+        "motionMismatch": 0.002881233286918529,
+        "appearanceMismatch": 0.02780804848767279,
+        "periodicityMismatch": 0.14667869580097317,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.027891784969477702,
+        "seamMotion": 0.02780804848767279,
+        "expectedMotion": 0.028736555136655323,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 2,
+      "startFrame": 187,
+      "endFrame": 206,
+      "frameCount": 20,
+      "startTime": 7.791666666666667,
+      "endTime": 8.583333333333334,
+      "score": 0.04690497387876903,
+      "confidence": 0.953095026121231,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.010659978422394405,
+        "motionMismatch": 0.0013054039420152168,
+        "appearanceMismatch": 0.0273532849332815,
+        "periodicityMismatch": 0.16991258947670318,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.02857165492258602,
+        "seamMotion": 0.0273532849332815,
+        "expectedMotion": 0.02773167218840321,
+        "periodSupport": 460
+      }
+    },
+    {
+      "rank": 3,
+      "startFrame": 264,
+      "endFrame": 275,
+      "frameCount": 12,
+      "startTime": 11,
+      "endTime": 11.458333333333334,
+      "score": 0.04863956645868213,
+      "confidence": 0.9513604335413178,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.022353656014995664,
+        "motionMismatch": 0.0011909831684865165,
+        "appearanceMismatch": 0.028753246614393307,
+        "periodicityMismatch": 0.16022178218331404,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.027500065858412522,
+        "seamMotion": 0.028753246614393307,
+        "expectedMotion": 0.029100466428018182,
+        "periodSupport": 468
+      }
+    },
+    {
+      "rank": 4,
+      "startFrame": 1124,
+      "endFrame": 1146,
+      "frameCount": 23,
+      "startTime": 46.833333333333336,
+      "endTime": 47.75,
+      "score": 0.04870131398052748,
+      "confidence": 0.9512986860194725,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.023761781970178742,
+        "motionMismatch": 0.011012601250941051,
+        "appearanceMismatch": 0.02689023984141441,
+        "periodicityMismatch": 0.14928360259636542,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.020588142104356718,
+        "seamMotion": 0.02689023984141441,
+        "expectedMotion": 0.02193616439450373,
+        "periodSupport": 457
+      }
+    },
+    {
+      "rank": 5,
+      "startFrame": 201,
+      "endFrame": 220,
+      "frameCount": 20,
+      "startTime": 8.375,
+      "endTime": 9.166666666666666,
+      "score": 0.04939569424987392,
+      "confidence": 0.9506043057501261,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.015117397953397121,
+        "motionMismatch": 0.005543627502706593,
+        "appearanceMismatch": 0.026828585883256904,
+        "periodicityMismatch": 0.16991258947670318,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.027698212614879737,
+        "seamMotion": 0.026828585883256904,
+        "expectedMotion": 0.028686222959858974,
+        "periodSupport": 460
+      }
+    },
+    {
+      "rank": 6,
+      "startFrame": 215,
+      "endFrame": 224,
+      "frameCount": 10,
+      "startTime": 8.958333333333334,
+      "endTime": 9.333333333333334,
+      "score": 0.05015968402221495,
+      "confidence": 0.9498403159777851,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.03333629215097715,
+        "motionMismatch": 0.004712710150242034,
+        "appearanceMismatch": 0.03114259078238831,
+        "periodicityMismatch": 0.14667869580097317,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.027797605555994358,
+        "seamMotion": 0.03114259078238831,
+        "expectedMotion": 0.029531522019219908,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 7,
+      "startFrame": 203,
+      "endFrame": 222,
+      "frameCount": 20,
+      "startTime": 8.458333333333334,
+      "endTime": 9.25,
+      "score": 0.050280443292149174,
+      "confidence": 0.9497195567078508,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.016065742776217102,
+        "motionMismatch": 0.008391103662743513,
+        "appearanceMismatch": 0.02531505493460186,
+        "periodicityMismatch": 0.16991258947670318,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.02744946403328174,
+        "seamMotion": 0.02531505493460186,
+        "expectedMotion": 0.02893954553409093,
+        "periodSupport": 460
+      }
+    },
+    {
+      "rank": 8,
+      "startFrame": 184,
+      "endFrame": 203,
+      "frameCount": 20,
+      "startTime": 7.666666666666667,
+      "endTime": 8.458333333333334,
+      "score": 0.050407879287030305,
+      "confidence": 0.9495921207129697,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.016230962222143916,
+        "motionMismatch": 0.009055952188181731,
+        "appearanceMismatch": 0.024211276649112465,
+        "periodicityMismatch": 0.16991258947670318,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.028396207875201012,
+        "seamMotion": 0.024211276649112465,
+        "expectedMotion": 0.028304542492733176,
+        "periodSupport": 460
+      }
+    },
+    {
+      "rank": 9,
+      "startFrame": 190,
+      "endFrame": 209,
+      "frameCount": 20,
+      "startTime": 7.916666666666667,
+      "endTime": 8.708333333333334,
+      "score": 0.05055692108879602,
+      "confidence": 0.9494430789112039,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.02075041366642143,
+        "motionMismatch": 0.001901398381814849,
+        "appearanceMismatch": 0.028330291952105024,
+        "periodicityMismatch": 0.16991258947670318,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.02890455159724211,
+        "seamMotion": 0.028330291952105024,
+        "expectedMotion": 0.028904322152564985,
+        "periodSupport": 460
+      }
+    },
+    {
+      "rank": 10,
+      "startFrame": 1125,
+      "endFrame": 1148,
+      "frameCount": 24,
+      "startTime": 46.875,
+      "endTime": 47.833333333333336,
+      "score": 0.05145224730333045,
+      "confidence": 0.9485477526966696,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.031139089950301818,
+        "motionMismatch": 0.009717309669914765,
+        "appearanceMismatch": 0.024736684442635205,
+        "periodicityMismatch": 0.15230778185015614,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.02050788591559654,
+        "seamMotion": 0.024736684442635205,
+        "expectedMotion": 0.020675050435786033,
+        "periodSupport": 456
+      }
+    },
+    {
+      "rank": 11,
+      "startFrame": 1122,
+      "endFrame": 1144,
+      "frameCount": 23,
+      "startTime": 46.75,
+      "endTime": 47.666666666666664,
+      "score": 0.05162779789169938,
+      "confidence": 0.9483722021083006,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.02661171105884916,
+        "motionMismatch": 0.01803521563354469,
+        "appearanceMismatch": 0.030291246956402958,
+        "periodicityMismatch": 0.14928360259636542,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.020496544965100814,
+        "seamMotion": 0.030291246956402958,
+        "expectedMotion": 0.022021792855471116,
+        "periodSupport": 457
+      }
+    },
+    {
+      "rank": 12,
+      "startFrame": 1093,
+      "endFrame": 1114,
+      "frameCount": 22,
+      "startTime": 45.541666666666664,
+      "endTime": 46.416666666666664,
+      "score": 0.05174080419463472,
+      "confidence": 0.9482591958053653,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.027711871093297938,
+        "motionMismatch": 0.019510390345693882,
+        "appearanceMismatch": 0.02797534733926527,
+        "periodicityMismatch": 0.1474926939700236,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.020866182899288706,
+        "seamMotion": 0.02797534733926527,
+        "expectedMotion": 0.018888760575009444,
+        "periodSupport": 458
+      }
+    },
+    {
+      "rank": 13,
+      "startFrame": 1100,
+      "endFrame": 1122,
+      "frameCount": 23,
+      "startTime": 45.833333333333336,
+      "endTime": 46.75,
+      "score": 0.052592557300367555,
+      "confidence": 0.9474074426996324,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.030057098025337646,
+        "motionMismatch": 0.017150963651870278,
+        "appearanceMismatch": 0.03036060090220233,
+        "periodicityMismatch": 0.14928360259636542,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.02065090114346758,
+        "seamMotion": 0.03036060090220233,
+        "expectedMotion": 0.022651796037260766,
+        "periodSupport": 457
+      }
+    },
+    {
+      "rank": 14,
+      "startFrame": 1095,
+      "endFrame": 1115,
+      "frameCount": 21,
+      "startTime": 45.625,
+      "endTime": 46.458333333333336,
+      "score": 0.05278082785852148,
+      "confidence": 0.9472191721414785,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.02883968964645244,
+        "motionMismatch": 0.022294075930052948,
+        "appearanceMismatch": 0.02971941177601905,
+        "periodicityMismatch": 0.1468633425559726,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.021209904147059876,
+        "seamMotion": 0.02971941177601905,
+        "expectedMotion": 0.01947172856577506,
+        "periodSupport": 459
+      }
+    },
+    {
+      "rank": 15,
+      "startFrame": 1103,
+      "endFrame": 1124,
+      "frameCount": 22,
+      "startTime": 45.958333333333336,
+      "endTime": 46.833333333333336,
+      "score": 0.05288557349584429,
+      "confidence": 0.9471144265041557,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.03143320850259956,
+        "motionMismatch": 0.018066999011165343,
+        "appearanceMismatch": 0.030799453618438544,
+        "periodicityMismatch": 0.1474926939700236,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.020739789618092235,
+        "seamMotion": 0.030799453618438544,
+        "expectedMotion": 0.02277197137709512,
+        "periodSupport": 458
+      }
+    },
+    {
+      "rank": 16,
+      "startFrame": 1105,
+      "endFrame": 1126,
+      "frameCount": 22,
+      "startTime": 46.041666666666664,
+      "endTime": 46.916666666666664,
+      "score": 0.05328676030617181,
+      "confidence": 0.9467132396938281,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.03325712148620252,
+        "motionMismatch": 0.01734195094901782,
+        "appearanceMismatch": 0.03023780275366261,
+        "periodicityMismatch": 0.1474926939700236,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.02079939587886804,
+        "seamMotion": 0.03023780275366261,
+        "expectedMotion": 0.0226318509305834,
+        "periodSupport": 458
+      }
+    },
+    {
+      "rank": 17,
+      "startFrame": 1152,
+      "endFrame": 1164,
+      "frameCount": 13,
+      "startTime": 48,
+      "endTime": 48.5,
+      "score": 0.06877279006427645,
+      "confidence": 0.9312272099357235,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.04517328602584277,
+        "motionMismatch": 0.04940691577589691,
+        "appearanceMismatch": 0.04593653123435712,
+        "periodicityMismatch": 0.15783871054385867,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.020855552409857064,
+        "seamMotion": 0.04593653123435712,
+        "expectedMotion": 0.023716766617577247,
+        "periodSupport": 149
+      }
+    },
+    {
+      "rank": 18,
+      "startFrame": 1154,
+      "endFrame": 1163,
+      "frameCount": 10,
+      "startTime": 48.083333333333336,
+      "endTime": 48.458333333333336,
+      "score": 0.06903323246221392,
+      "confidence": 0.9309667675377861,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.049929289953347944,
+        "motionMismatch": 0.059097493750019256,
+        "appearanceMismatch": 0.046586828228547615,
+        "periodicityMismatch": 0.14227887133244663,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.01896573506508971,
+        "seamMotion": 0.046586828228547615,
+        "expectedMotion": 0.01983100806544062,
+        "periodSupport": 152
+      }
+    },
+    {
+      "rank": 19,
+      "startFrame": 1152,
+      "endFrame": 1166,
+      "frameCount": 15,
+      "startTime": 48,
+      "endTime": 48.583333333333336,
+      "score": 0.07236257074396127,
+      "confidence": 0.9276374292560388,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.049044900522043834,
+        "motionMismatch": 0.04889327441888507,
+        "appearanceMismatch": 0.04786742067605737,
+        "periodicityMismatch": 0.16718135438270565,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.021488141809509368,
+        "seamMotion": 0.04786742067605737,
+        "expectedMotion": 0.025219589637008842,
+        "periodSupport": 147
+      }
+    },
+    {
+      "rank": 20,
+      "startFrame": 1152,
+      "endFrame": 1162,
+      "frameCount": 11,
+      "startTime": 48,
+      "endTime": 48.416666666666664,
+      "score": 0.07483797554887736,
+      "confidence": 0.9251620244511226,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.05151026102380099,
+        "motionMismatch": 0.07287043019742544,
+        "appearanceMismatch": 0.05428645722553726,
+        "periodicityMismatch": 0.14788611239733304,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.020386692242011468,
+        "seamMotion": 0.05428645722553726,
+        "expectedMotion": 0.021037823954290952,
+        "periodSupport": 151
+      }
+    },
+    {
+      "rank": 21,
+      "startFrame": 773,
+      "endFrame": 782,
+      "frameCount": 10,
+      "startTime": 32.208333333333336,
+      "endTime": 32.583333333333336,
+      "score": 0.0752074571431293,
+      "confidence": 0.9247925428568707,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.05146726049602586,
+        "motionMismatch": 0.07761581743106011,
+        "appearanceMismatch": 0.05112634936659777,
+        "periodicityMismatch": 0.14579451850707612,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.013837826793178416,
+        "seamMotion": 0.05112634936659777,
+        "expectedMotion": 0.014680732586703328,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 22,
+      "startFrame": 384,
+      "endFrame": 393,
+      "frameCount": 10,
+      "startTime": 16,
+      "endTime": 16.375,
+      "score": 0.07540575103202861,
+      "confidence": 0.9245942489679714,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.051664745328236235,
+        "motionMismatch": 0.07888218864849625,
+        "appearanceMismatch": 0.04896659878863644,
+        "periodicityMismatch": 0.14579451850707612,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.012658059152843983,
+        "seamMotion": 0.04896659878863644,
+        "expectedMotion": 0.012724805025948274,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 23,
+      "startFrame": 1154,
+      "endFrame": 1165,
+      "frameCount": 12,
+      "startTime": 48.083333333333336,
+      "endTime": 48.541666666666664,
+      "score": 0.07610912440341584,
+      "confidence": 0.9238908755965841,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.05586848171948776,
+        "motionMismatch": 0.06728756075083667,
+        "appearanceMismatch": 0.05317518793692045,
+        "periodicityMismatch": 0.15296171251514817,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.020134518260645884,
+        "seamMotion": 0.05317518793692045,
+        "expectedMotion": 0.022083111977870367,
+        "periodSupport": 150
+      }
+    },
+    {
+      "rank": 24,
+      "startFrame": 771,
+      "endFrame": 780,
+      "frameCount": 10,
+      "startTime": 32.125,
+      "endTime": 32.5,
+      "score": 0.07646730307536055,
+      "confidence": 0.9235326969246395,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.05447662210677913,
+        "motionMismatch": 0.07766060662312439,
+        "appearanceMismatch": 0.05395026909759404,
+        "periodicityMismatch": 0.14579451850707612,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.017359951412186516,
+        "seamMotion": 0.05395026909759404,
+        "expectedMotion": 0.017448585361694472,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 25,
+      "startFrame": 1156,
+      "endFrame": 1165,
+      "frameCount": 10,
+      "startTime": 48.166666666666664,
+      "endTime": 48.541666666666664,
+      "score": 0.07717439737381028,
+      "confidence": 0.9228256026261897,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.05906145567521357,
+        "motionMismatch": 0.07697510228451585,
+        "appearanceMismatch": 0.05590685970208353,
+        "periodicityMismatch": 0.14227887133244663,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.019283402212013648,
+        "seamMotion": 0.05590685970208353,
+        "expectedMotion": 0.019863093391258288,
+        "periodSupport": 152
+      }
+    },
+    {
+      "rank": 26,
+      "startFrame": 386,
+      "endFrame": 395,
+      "frameCount": 10,
+      "startTime": 16.083333333333332,
+      "endTime": 16.458333333333332,
+      "score": 0.07779788228036752,
+      "confidence": 0.9222021177196325,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.054161268376982166,
+        "motionMismatch": 0.08443385574189215,
+        "appearanceMismatch": 0.051603015155514916,
+        "periodicityMismatch": 0.14579451850707612,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.01319131528457752,
+        "seamMotion": 0.051603015155514916,
+        "expectedMotion": 0.013159857227926817,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 27,
+      "startFrame": 773,
+      "endFrame": 784,
+      "frameCount": 12,
+      "startTime": 32.208333333333336,
+      "endTime": 32.666666666666664,
+      "score": 0.07870669516915725,
+      "confidence": 0.9212933048308427,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.051601422614159065,
+        "motionMismatch": 0.0803822226519369,
+        "appearanceMismatch": 0.051714357358866585,
+        "periodicityMismatch": 0.15722220606320414,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.012212756642343336,
+        "seamMotion": 0.051714357358866585,
+        "expectedMotion": 0.013777204546842278,
+        "periodSupport": 468
+      }
+    },
+    {
+      "rank": 28,
+      "startFrame": 388,
+      "endFrame": 397,
+      "frameCount": 10,
+      "startTime": 16.166666666666668,
+      "endTime": 16.541666666666668,
+      "score": 0.07936288659738325,
+      "confidence": 0.9206371134026168,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.0559738571655315,
+        "motionMismatch": 0.08788023259761446,
+        "appearanceMismatch": 0.05312293619970998,
+        "periodicityMismatch": 0.14579451850707612,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.013523393072782643,
+        "seamMotion": 0.05312293619970998,
+        "expectedMotion": 0.01342448850503443,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 29,
+      "startFrame": 1154,
+      "endFrame": 1167,
+      "frameCount": 14,
+      "startTime": 48.083333333333336,
+      "endTime": 48.625,
+      "score": 0.07987955907086842,
+      "confidence": 0.9201204409291316,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.056050882737765206,
+        "motionMismatch": 0.07218036672031986,
+        "appearanceMismatch": 0.056050882737765206,
+        "periodicityMismatch": 0.16256208461720947,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.020651908706952313,
+        "seamMotion": 0.056050882737765206,
+        "expectedMotion": 0.02218234628205458,
+        "periodSupport": 148
+      }
+    },
+    {
+      "rank": 30,
+      "startFrame": 390,
+      "endFrame": 399,
+      "frameCount": 10,
+      "startTime": 16.25,
+      "endTime": 16.625,
+      "score": 0.0803812151011792,
+      "confidence": 0.9196187848988208,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.056840749544307026,
+        "motionMismatch": 0.09047370378848521,
+        "appearanceMismatch": 0.054387336314751136,
+        "periodicityMismatch": 0.14579451850707612,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.013669880315487583,
+        "seamMotion": 0.054387336314751136,
+        "expectedMotion": 0.01352408847197993,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 31,
+      "startFrame": 775,
+      "endFrame": 784,
+      "frameCount": 10,
+      "startTime": 32.291666666666664,
+      "endTime": 32.666666666666664,
+      "score": 0.08074242951892885,
+      "confidence": 0.9192575704810712,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.04523356757461101,
+        "motionMismatch": 0.07181579766196086,
+        "appearanceMismatch": 0.04521280421417635,
+        "periodicityMismatch": 0.14579451850707612,
+        "staticPenalty": 0.1586586054309687,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.010096096734828376,
+        "seamMotion": 0.04521280421417635,
+        "expectedMotion": 0.011285591183133263,
+        "periodSupport": 470
+      }
+    },
+    {
+      "rank": 32,
+      "startFrame": 1156,
+      "endFrame": 1167,
+      "frameCount": 12,
+      "startTime": 48.166666666666664,
+      "endTime": 48.625,
+      "score": 0.08250956497888007,
+      "confidence": 0.9174904350211199,
+      "suggestsDropLastFrame": false,
+      "diagnostics": {
+        "closure": 0.06008820519384566,
+        "motionMismatch": 0.0856737824742889,
+        "appearanceMismatch": 0.06008820519384566,
+        "periodicityMismatch": 0.15296171251514817,
+        "staticPenalty": 0,
+        "duplicatePenalty": 0,
+        "meanMotion": 0.0200496120210362,
+        "seamMotion": 0.06008820519384566,
+        "expectedMotion": 0.0199623276954425,
+        "periodSupport": 150
+      }
+    }
+  ]
+}

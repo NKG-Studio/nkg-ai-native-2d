@@ -5,6 +5,32 @@ export interface MaskPoint {
   y: number
 }
 
+export interface ContainedImageBox {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export function pointInContainedImage(
+  box: ContainedImageBox,
+  sourceWidth: number,
+  sourceHeight: number,
+  clientX: number,
+  clientY: number,
+): MaskPoint | null {
+  if (box.width <= 0 || box.height <= 0 || sourceWidth <= 0 || sourceHeight <= 0) return null
+  const scale = Math.min(box.width / sourceWidth, box.height / sourceHeight)
+  const renderedWidth = sourceWidth * scale
+  const renderedHeight = sourceHeight * scale
+  const renderedLeft = box.left + (box.width - renderedWidth) / 2
+  const renderedTop = box.top + (box.height - renderedHeight) / 2
+  const x = (clientX - renderedLeft) / renderedWidth
+  const y = (clientY - renderedTop) / renderedHeight
+  if (x < 0 || x > 1 || y < 0 || y > 1) return null
+  return { x, y }
+}
+
 export interface MaskStroke {
   mode: MaskBrushMode
   size: number

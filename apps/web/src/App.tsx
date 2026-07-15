@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useEffect, useMemo, useReducer, useRef, useState, type DragEvent as ReactDragEvent } from 'react'
 import {
   analyzeSequence,
   detectLoopCandidates,
@@ -32,6 +32,7 @@ import {
   applyMaskStrokes,
   createMaskEditorState,
   maskEditorReducer,
+  pointInContainedImage,
   type MaskBrushMode,
   type MaskPoint,
   type MaskStroke,
@@ -53,7 +54,8 @@ import {
   saveLatestProject,
   type ProjectSnapshot,
 } from './project'
-import type { CapturedFrame } from './types'
+import type { CapturedFrame, ExtractionProgress } from './types'
+import { isSupportedVideoFile } from './upload'
 
 type Stage = 'source' | 'loop' | 'matte' | 'export'
 type MatteMode = 'original' | 'chroma' | 'ai'
@@ -75,8 +77,9 @@ export default function App() {
   const [file, setFile] = useState<File | null>(null)
   const [sourceKind, setSourceKind] = useState<'empty' | 'video' | 'demo'>('empty')
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
   const [fps, setFps] = useState(12)
-  const [maxFrames, setMaxFrames] = useState(144)
+  const [analysisWindowSeconds, setAnalysisWindowSeconds] = useState(20)
   const [minLoopFrames, setMinLoopFrames] = useState(8)
   const [frames, setFrames] = useState<CapturedFrame[]>([])
   const [editorState, dispatchEditor] = useReducer(frameEditorReducer, undefined, () => createFrameEditorState())
@@ -86,7 +89,7 @@ export default function App() {
   const [startFrame, setStartFrame] = useState(0)
   const [endFrame, setEndFrame] = useState(0)
   const [extracting, setExtracting] = useState(false)
-  const [progress, setProgress] = useState({ current: 0, total: 0 })
+  const [progress, setProgress] = useState<ExtractionProgress>({ current: 0, total: 0 })
   const [error, setError] = useState<string | null>(null)
   const [stage, setStage] = useState<Stage>('source')
   const [playing, setPlaying] = useState(true)
@@ -126,7 +129,9 @@ export default function App() {
   const activeMaskStrokeRef = useRef<ActiveMaskStroke | null>(null)
   const matteEngineRef = useRef<BrowserMatteEngine | null>(null)
   const cancelMattingRef = useRef(false)
+  const captureAbortRef = useRef<AbortController | null>(null)
   const pendingProjectRangeRef = useRef<{ startFrame: number; endFrame: number } | null>(null)
+  const dragDepthRef = useRef(0)
 
   useEffect(() => {
     if (!file) {
@@ -273,6 +278,7 @@ export default function App() {
   }, [stage])
 
   const pickFile = (nextFile: File | null) => {
+    captureAbortRef.current?.abort()
     setFile(nextFile)
     setSourceKind(nextFile ? 'video' : 'empty')
     setFrames([])
@@ -290,17 +296,59 @@ export default function App() {
     setStage('source')
   }
 
+  const acceptVideoFile = (nextFile: File | null) => {
+    if (!nextFile) return
+    if (!isSupportedVideoFile(nextFile)) {
+      setError('仅支持 MP4、MOV 或 WEBM 视频文件')
+      return
+    }
+    pickFile(nextFile)
+  }
+
+  const handleDragEnter = (event: ReactDragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    dragDepthRef.current += 1
+    if (event.dataTransfer.types.includes('Files')) setDragActive(true)
+  }
+
+  const handleDragOver = (event: ReactDragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'copy'
+  }
+
+  const handleDragLeave = (event: ReactDragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1)
+    if (dragDepthRef.current === 0) setDragActive(false)
+  }
+
+  const handleDrop = (event: ReactDragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    dragDepthRef.current = 0
+    setDragActive(false)
+    acceptVideoFile(event.dataTransfer.files?.[0] ?? null)
+  }
+
   const extract = async () => {
     if (!file) return
     setExtracting(true)
     setError(null)
     setProgress({ current: 0, total: 1 })
+    const controller = new AbortController()
+    captureAbortRef.current = controller
     try {
-      const nextFrames = await captureVideoFrames(file, fps, maxFrames, setProgress)
-      acceptFrames(nextFrames)
+      const result = await captureVideoFrames(file, fps, minLoopFrames, analysisWindowSeconds, setProgress, controller.signal)
+      acceptFrames(result.frames)
+      setProjectMessage(`已流式扫描完整视频 · ${result.scan.sampledFrames} 个采样帧 · ${result.scan.windowsAnalyzed} 个窗口 · 仅载入最佳候选 ${result.frames.length} 帧`)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause))
+      if (controller.signal.aborted) setProjectMessage('已取消视频流式分析')
+      else setError(cause instanceof Error ? cause.message : String(cause))
     } finally {
+      if (captureAbortRef.current === controller) captureAbortRef.current = null
       setExtracting(false)
     }
   }
@@ -423,16 +471,21 @@ export default function App() {
   const activeCandidate = candidates.find((candidate) =>
     candidate.startFrame === startFrame && candidate.endFrame === endFrame)
 
-  const maskPointFromEvent = (event: React.PointerEvent<HTMLCanvasElement>): MaskPoint => {
+  const maskPointFromEvent = (event: React.PointerEvent<HTMLCanvasElement>): MaskPoint | null => {
     const bounds = event.currentTarget.getBoundingClientRect()
-    return {
-      x: (event.clientX - bounds.left) / Math.max(1, bounds.width),
-      y: (event.clientY - bounds.top) / Math.max(1, bounds.height),
-    }
+    return pointInContainedImage(
+      bounds,
+      event.currentTarget.width,
+      event.currentTarget.height,
+      event.clientX,
+      event.clientY,
+    )
   }
 
   const beginMaskStroke = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (!maskEditing || !previewFrame) return
+    const point = maskPointFromEvent(event)
+    if (!point) return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     setPlaying(false)
@@ -441,7 +494,7 @@ export default function App() {
       frameId: previewFrame.index,
       mode: brushMode,
       size: brushSize,
-      points: [maskPointFromEvent(event)],
+      points: [point],
     }
     activeMaskStrokeRef.current = stroke
     setActiveMaskStroke(stroke)
@@ -450,8 +503,10 @@ export default function App() {
   const extendMaskStroke = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const current = activeMaskStrokeRef.current
     if (!current || current.pointerId !== event.pointerId) return
+    const point = maskPointFromEvent(event)
+    if (!point) return
     event.preventDefault()
-    const next = { ...current, points: [...current.points, maskPointFromEvent(event)] }
+    const next = { ...current, points: [...current.points, point] }
     activeMaskStrokeRef.current = next
     setActiveMaskStroke(next)
   }
@@ -570,7 +625,7 @@ export default function App() {
         schemaVersion: PROJECT_SCHEMA_VERSION,
         savedAt: new Date().toISOString(),
         source,
-        capture: { fps, maxFrames, minLoopFrames },
+        capture: { fps, analysisWindowSeconds, minLoopFrames },
         editor: {
           order: [...editorState.present.order],
           hidden: [...editorState.present.hidden],
@@ -623,7 +678,9 @@ export default function App() {
       const project = await loadLatestProject()
       if (!project) throw new Error('没有找到本地项目')
       setFps(project.capture.fps)
-      setMaxFrames(project.capture.maxFrames)
+      const restoredWindowSeconds = project.capture.analysisWindowSeconds
+        ?? Math.max(1, (project.capture.maxFrames ?? 240) / project.capture.fps)
+      setAnalysisWindowSeconds(restoredWindowSeconds)
       setMinLoopFrames(project.capture.minLoopFrames)
 
       let nextFrames: CapturedFrame[]
@@ -638,15 +695,17 @@ export default function App() {
         })
         setSourceKind('video')
         setFile(nextFile)
-        nextFrames = await captureVideoFrames(
+        const restoredCapture = await captureVideoFrames(
           nextFile,
           project.capture.fps,
-          project.capture.maxFrames,
-          ({ current, total }) => {
-            setProgress({ current, total })
-            setProjectMessage(`正在重建源帧 ${current} / ${total}`)
+          project.capture.minLoopFrames,
+          restoredWindowSeconds,
+          ({ phase, current, total }) => {
+            setProgress({ phase, current, total })
+            setProjectMessage(`${phase === 'capturing' ? '正在载入候选原始帧' : '正在流式重扫完整视频'} ${current} / ${total}`)
           },
         )
+        nextFrames = restoredCapture.frames
       }
 
       const validIds = new Set(nextFrames.map((frame) => frame.index))
@@ -775,8 +834,21 @@ export default function App() {
           <section className="workspace source-grid">
             <div className="panel upload-panel">
               <div className="panel-heading"><span>INPUT / SOURCE</span><small>MP4 · MOV · WEBM</small></div>
-              <label className="drop-zone">
-                <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={(event) => pickFile(event.target.files?.[0] ?? null)} />
+              <label
+                className={`drop-zone ${dragActive ? 'drag-active' : ''}`}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+                  onChange={(event) => {
+                    acceptVideoFile(event.currentTarget.files?.[0] ?? null)
+                    event.currentTarget.value = ''
+                  }}
+                />
                 {videoUrl ? (
                   <video src={videoUrl} controls muted />
                 ) : (
@@ -792,17 +864,18 @@ export default function App() {
             <div className="panel settings-panel">
               <div className="panel-heading"><span>CAPTURE / SAMPLE</span><small>BROWSER CANVAS</small></div>
               <Control label="采样帧率" value={`${fps} FPS`}>
-                <input type="range" min="2" max="30" value={fps} onChange={(event) => setFps(Number(event.target.value))} />
+                <input type="number" min="0.01" step="1" value={fps} onChange={(event) => setFps(Math.max(0.01, Number(event.target.value) || 0.01))} />
               </Control>
-              <Control label="最大抽帧数" value={String(maxFrames)}>
-                <input type="range" min="24" max="360" step="12" value={maxFrames} onChange={(event) => setMaxFrames(Number(event.target.value))} />
+              <Control label="分析窗口" value={`${analysisWindowSeconds}s · 不截断视频`}>
+                <input type="number" min="0.1" step="1" value={analysisWindowSeconds} onChange={(event) => setAnalysisWindowSeconds(Math.max(0.1, Number(event.target.value) || 0.1))} />
               </Control>
               <Control label="最短循环" value={`${minLoopFrames} 帧`}>
-                <input type="range" min="3" max="60" value={minLoopFrames} onChange={(event) => setMinLoopFrames(Number(event.target.value))} />
+                <input type="number" min="2" step="1" value={minLoopFrames} onChange={(event) => setMinLoopFrames(Math.max(2, Math.floor(Number(event.target.value) || 2)))} />
               </Control>
               <button className="primary-action" disabled={!file || extracting} onClick={extract}>
-                {extracting ? `正在抽帧 ${progress.current}/${progress.total}` : '抽帧并分析循环 →'}
+                {extracting ? `正在${progress.phase === 'capturing' ? '载入候选帧' : '流式扫描'} ${progress.current}/${progress.total}` : '扫描完整视频并分析循环 →'}
               </button>
+              {extracting && <button className="secondary-action" onClick={() => captureAbortRef.current?.abort()}>取消分析</button>}
               <button className="secondary-action demo-action" disabled={extracting} onClick={loadDemo}>载入内置循环演示</button>
               {extracting && <div className="progress"><i style={{ width: `${(progress.current / Math.max(1, progress.total)) * 100}%` }} /></div>}
             </div>
@@ -915,7 +988,7 @@ export default function App() {
         {(stage === 'matte' || stage === 'export') && frames.length > 0 && (
           <section className="workspace finish-grid">
             <div className="panel preview-panel">
-              <div className="panel-heading"><span>LOOP / PREVIEW</span><small>{selectedFrames.length} FRAMES · {fps} FPS</small></div>
+              <div className="panel-heading"><span>LOOP / PREVIEW</span><small>{previewFrame ? `${previewFrame.canvas.width}×${previewFrame.canvas.height} · ` : ''}{selectedFrames.length} FRAMES · {fps} FPS</small></div>
               <div className={`checkerboard ${maskEditing ? 'mask-editing' : ''}`}>
                 <canvas
                   ref={previewCanvasRef}

@@ -46,7 +46,7 @@ npm run dev
 
 打开 `http://localhost:5173`，然后按下面的流程操作：
 
-1. 拖入视频，设置抽帧 FPS、起止时间与最大帧数。
+1. 拖入视频，设置分析 FPS、局部计算窗口与最短循环；工具会流式扫描完整视频，不再按最大帧数截断。
 2. 查看自动候选和 A/B 接缝对比，确认或手动微调循环区间。
 3. 选择色度键或本地 AI 抠图，用笔刷修复需要保留/移除的细节。
 4. 选择排布、Pivot、帧时长与目标预设，导出 PNG 和配套数据。
@@ -89,16 +89,25 @@ codex mcp add frameloop -- node apps/mcp/dist/index.js
 | MCP 工具 | 作用 | 写入文件 |
 | --- | --- | --- |
 | `inspect_video` | 读取时长、尺寸、FPS 与编码信息 | 否 |
-| `analyze_video_loop` | 输出 Top K 循环候选与多模态接缝图 | 否 |
+| `analyze_video_loop` | 流式扫描完整视频，检测动作硬切，并筛选段首闭环与段内稳定周期 | 仅写临时报告缓存 |
+| `read_analysis_report` | 分页读取任意长度视频或图片序列的窗口、动作段和候选结果 | 否 |
+| `review_video_loop_candidates` | 按页回传候选循环首尾帧接缝图，供多模态 AI 复核 | 否 |
+| `review_video_action_segments` | 回传每段八帧概览和候选六帧接缝图，供 AI 判断动作语义与最早完整闭环 | 否 |
 | `analyze_sprite_sequence` | 分析图片序列的主周期、重复帧和镜头切换 | 否 |
 | `export_loop_frames` | 按时间区间与 FPS 导出 PNG 序列 | 是 |
+| `export_reviewed_action` | 按 AI 确认的排他结束帧导出动作并保存复核清单 | 是 |
 | `compose_sprite_sheet` | 合成透明 Sprite Sheet 与 JSON 索引 | 是 |
 
-推荐让 AI 先调用 `inspect_video` 和 `analyze_video_loop`，查看候选接缝图并结合动作语义选择区间；涉及导出写文件时，再由使用者确认目标目录。
+推荐工作流：
+
+1. AI 调用 `inspect_video` 和 `analyze_video_loop`，获得硬切动作段及每段 3–5 个代表候选。
+2. AI 分页调用 `review_video_action_segments`，同时观察全段动作概览和候选接缝前后三帧。
+3. AI 返回动作名称、最早有效结束帧、末帧是否重复首帧和 `export_end_exclusive`。
+4. 使用者确认边界与输出目录后，调用 `export_reviewed_action`。
 
 ## 循环评分是怎样工作的
 
-算法会综合以下信号进行排序：
+算法先使用相对局部运动的突变检测硬切，即使角色占画面较小、背景颜色不变，也能发现直接从 idle 切到跑步的动作边界。每段同时保留 `segment_anchor`（从硬切段首开始）和 `periodic_core`（段内最早稳定周期）候选，再综合以下信号筛选起止点：
 
 - `closure`：接缝两侧帧的感知距离。
 - `motionMismatch`：接缝前后运动能量与质心速度方向差。
@@ -125,7 +134,10 @@ packages/core  循环检测与 Sprite 布局算法
 
 ## 当前边界与路线图
 
-- 浏览器端适合数百帧以内的交互式处理；长视频建议先裁切，或交给 MCP/服务端管线。
+- 浏览器端会先用低分辨率特征流扫描完整视频，再只加载最佳循环候选的原始帧进入时间线；“分析窗口”控制单次计算量，不会截断视频。
+- MCP 端直接消费 FFmpeg 原始像素流并使用重叠窗口，内存占用与视频总长度解耦；完整窗口结果写入临时报告，可由 `read_analysis_report` 分页读取。
+- 动作分段使用局部突变而不是传统全画面固定阈值；候选同时覆盖段首闭环和段内周期核心，既支持直接起跑的规范循环，也支持带入场 / 收势的动作段。
+- AI 复核图包含全段八帧概览和 `END-2 / END-1 / END / START / START+1 / START+2` 六帧接缝，可区分主体完整动作与火焰、衣摆等局部微循环。
 - 自动评分是候选排序，不是绝对真值；动作语义仍建议由人或多模态模型复核。
 - 项目存储目前只有一个本地槽位，尚未提供多项目命名、缩略图和配额管理。
 - Unity 预设需要项目侧导入脚本；后续会提供可直接放入 `Editor/` 的导入器。

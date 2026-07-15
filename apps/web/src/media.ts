@@ -1,4 +1,9 @@
-import type { FrameFeature } from '@frameloop/core'
+import {
+  analyzeSequence,
+  detectLoopCandidates,
+  type FrameFeature,
+  type LoopCandidate,
+} from '@frameloop/core'
 import type { CapturedFrame, ExtractionProgress } from './types'
 
 const FEATURE_SIZE = 24
@@ -29,11 +34,15 @@ async function seek(video: HTMLVideoElement, time: number): Promise<void> {
 }
 
 function extractFeature(canvas: HTMLCanvasElement, index: number, timestamp: number): FrameFeature {
-  const sample = document.createElement('canvas')
-  sample.width = FEATURE_SIZE
-  sample.height = FEATURE_SIZE
+  const sample = canvas.width === FEATURE_SIZE && canvas.height === FEATURE_SIZE
+    ? canvas
+    : document.createElement('canvas')
+  if (sample !== canvas) {
+    sample.width = FEATURE_SIZE
+    sample.height = FEATURE_SIZE
+    sample.getContext('2d', { willReadFrequently: true })!.drawImage(canvas, 0, 0, FEATURE_SIZE, FEATURE_SIZE)
+  }
   const context = sample.getContext('2d', { willReadFrequently: true })!
-  context.drawImage(canvas, 0, 0, FEATURE_SIZE, FEATURE_SIZE)
   const pixels = context.getImageData(0, 0, FEATURE_SIZE, FEATURE_SIZE).data
   const luma = new Array<number>(FEATURE_SIZE * FEATURE_SIZE)
   let weightedX = 0
@@ -77,12 +86,47 @@ function extractFeature(canvas: HTMLCanvasElement, index: number, timestamp: num
   }
 }
 
+export interface BrowserVideoScan {
+  duration: number
+  sampledFrames: number
+  windowsAnalyzed: number
+  peakBufferedFrames: number
+  candidates: LoopCandidate[]
+  selectedCandidate: LoopCandidate | null
+}
+
+export interface BrowserVideoCaptureResult {
+  frames: CapturedFrame[]
+  scan: BrowserVideoScan
+}
+
+function offsetCandidate(candidate: LoopCandidate, offset: number): LoopCandidate {
+  return {
+    ...candidate,
+    startFrame: candidate.startFrame + offset,
+    endFrame: candidate.endFrame + offset,
+  }
+}
+
+function mergeCandidates(candidates: LoopCandidate[]) {
+  const result: LoopCandidate[] = []
+  for (const candidate of candidates.sort((a, b) => a.score - b.score || a.frameCount - b.frameCount)) {
+    const duplicate = result.some((picked) =>
+      Math.abs(picked.startFrame - candidate.startFrame) <= 1
+      && Math.abs(picked.endFrame - candidate.endFrame) <= 1)
+    if (!duplicate) result.push(candidate)
+  }
+  return result
+}
+
 export async function captureVideoFrames(
   file: File,
   fps: number,
-  maxFrames: number,
+  minLoopFrames: number,
+  analysisWindowSeconds: number,
   onProgress?: (progress: ExtractionProgress) => void,
-): Promise<CapturedFrame[]> {
+  signal?: AbortSignal,
+): Promise<BrowserVideoCaptureResult> {
   const url = URL.createObjectURL(file)
   const video = document.createElement('video')
   video.muted = true
@@ -93,14 +137,71 @@ export async function captureVideoFrames(
     await waitForEvent(video, 'loadedmetadata')
     const duration = video.duration
     if (!Number.isFinite(duration) || duration <= 0) throw new Error('无法读取视频时长')
-    const safeFps = Math.max(1, Math.min(30, fps))
-    const total = Math.max(2, Math.min(maxFrames, Math.ceil(duration * safeFps)))
+    const safeFps = Math.max(0.01, fps)
+    const total = Math.max(2, Math.ceil(duration * safeFps))
+    const safeMinLoopFrames = Math.max(2, Math.floor(minLoopFrames))
+    const windowFrames = Math.max(safeMinLoopFrames, Math.round(Math.max(0.1, analysisWindowSeconds) * safeFps))
+    const overlapFrames = Math.min(windowFrames - 1, Math.max(safeMinLoopFrames, Math.floor(windowFrames / 4)))
+    const stride = Math.max(1, windowFrames - overlapFrames)
     const width = video.videoWidth
     const height = video.videoHeight
-    const frames: CapturedFrame[] = []
+    const sample = document.createElement('canvas')
+    sample.width = FEATURE_SIZE
+    sample.height = FEATURE_SIZE
+    const sampleContext = sample.getContext('2d', { willReadFrequently: true })!
+    let buffer: FrameFeature[] = []
+    let peakBufferedFrames = 0
+    let windowsAnalyzed = 0
+    let lastAnalyzedEndFrame = -1
+    const windowCandidates: LoopCandidate[] = []
+
+    const analyzeWindow = (features: FrameFeature[]) => {
+      if (features.length < safeMinLoopFrames) return
+      const diagnostics = analyzeSequence(features, { minFrames: safeMinLoopFrames })
+      const boundaries = [
+        0,
+        ...diagnostics.transitions.filter((transition) => transition.isSceneCut).map((transition) => transition.frame),
+        features.length,
+      ].filter((value, index, values) => values.indexOf(value) === index).sort((a, b) => a - b)
+      for (let segmentIndex = 0; segmentIndex < boundaries.length - 1; segmentIndex += 1) {
+        const segment = features.slice(boundaries[segmentIndex], boundaries[segmentIndex + 1])
+        if (segment.length < safeMinLoopFrames) continue
+        windowCandidates.push(...detectLoopCandidates(segment, {
+          minFrames: safeMinLoopFrames,
+          maxFrames: segment.length,
+          topK: 5,
+          motionWindow: 3,
+        }).map((candidate) => offsetCandidate(candidate, segment[0]!.index)))
+      }
+      windowsAnalyzed += 1
+      lastAnalyzedEndFrame = features.at(-1)!.index
+    }
 
     for (let index = 0; index < total; index += 1) {
+      if (signal?.aborted) throw new Error('视频分析已取消')
       const timestamp = Math.min(duration - 0.001, index / safeFps)
+      await seek(video, timestamp)
+      sampleContext.drawImage(video, 0, 0, FEATURE_SIZE, FEATURE_SIZE)
+      buffer.push(extractFeature(sample, index, timestamp))
+      peakBufferedFrames = Math.max(peakBufferedFrames, buffer.length)
+      if (buffer.length >= windowFrames) {
+        analyzeWindow(buffer)
+        buffer = buffer.slice(stride)
+      }
+      onProgress?.({ phase: 'scanning', current: index + 1, total })
+      if (index % 6 === 0) await new Promise((resolve) => window.setTimeout(resolve, 0))
+    }
+    if (buffer.length >= safeMinLoopFrames && buffer.at(-1)!.index !== lastAnalyzedEndFrame) analyzeWindow(buffer)
+
+    const candidates = mergeCandidates(windowCandidates)
+    const selectedCandidate = candidates[0] ?? null
+    const captureStart = selectedCandidate?.startFrame ?? 0
+    const captureEnd = selectedCandidate?.endFrame ?? Math.min(total - 1, safeMinLoopFrames - 1)
+    const captureTotal = captureEnd - captureStart + 1
+    const frames: CapturedFrame[] = []
+    for (let sourceIndex = captureStart; sourceIndex <= captureEnd; sourceIndex += 1) {
+      if (signal?.aborted) throw new Error('视频分析已取消')
+      const timestamp = Math.min(duration - 0.001, sourceIndex / safeFps)
       await seek(video, timestamp)
       const canvas = document.createElement('canvas')
       canvas.width = width
@@ -109,16 +210,19 @@ export async function captureVideoFrames(
       context.drawImage(video, 0, 0, width, height)
       const previewUrl = canvas.toDataURL('image/jpeg', 0.72)
       frames.push({
-        index,
+        index: sourceIndex,
         timestamp,
         canvas,
         previewUrl,
-        feature: extractFeature(canvas, index, timestamp),
+        feature: extractFeature(canvas, sourceIndex, timestamp),
       })
-      onProgress?.({ current: index + 1, total })
-      if (index % 6 === 0) await new Promise((resolve) => window.setTimeout(resolve, 0))
+      onProgress?.({ phase: 'capturing', current: frames.length, total: captureTotal })
+      if (frames.length % 6 === 0) await new Promise((resolve) => window.setTimeout(resolve, 0))
     }
-    return frames
+    return {
+      frames,
+      scan: { duration, sampledFrames: total, windowsAnalyzed, peakBufferedFrames, candidates, selectedCandidate },
+    }
   } finally {
     video.removeAttribute('src')
     video.load()

@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { access, mkdir, mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -7,6 +7,7 @@ import ffprobe from 'ffprobe-static'
 import sharp from 'sharp'
 import type { FrameFeature } from '@frameloop/core'
 import type { LoopCandidate } from '@frameloop/core'
+import type { ActionLoopSegment } from './streaming.js'
 
 export interface VideoInfo {
   path: string
@@ -27,7 +28,7 @@ function run(command: string, args: string[]): Promise<string> {
   return new Promise((resolvePromise, reject) => {
     execFile(command, args, { windowsHide: true, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }, (error, stdout, stderr) => {
       if (!error) resolvePromise(stdout)
-      else reject(new Error(`${basename(command)} 执行失败：${stderr.slice(-2000)}`, { cause: error }))
+      else reject(new Error(`${basename(command)} 执行失败：${stderr.slice(-2000) || error.message}`, { cause: error }))
     })
   })
 }
@@ -134,44 +135,127 @@ function computeFeature(
 export async function extractAnalysisFeatures(
   inputPath: string,
   fps: number,
-  maxFrames: number,
+  maxFrames?: number,
 ): Promise<FrameFeature[]> {
-  if (!ffmpegPath) throw new Error('当前平台没有可用的 FFmpeg 二进制文件')
+  const features: FrameFeature[] = []
+  for await (const feature of streamAnalysisFeatures(inputPath, fps)) {
+    features.push(feature)
+    if (maxFrames !== undefined && features.length >= maxFrames) break
+  }
+  return features
+}
+
+let resolvedFfmpeg: Promise<string> | undefined
+
+export function resolveFfmpegExecutable(): Promise<string> {
+  resolvedFfmpeg ??= (async () => {
+    const candidates = [
+      process.env.FRAMELOOP_FFMPEG_PATH,
+      process.env.FFMPEG_PATH,
+      ffmpegPath,
+      'ffmpeg',
+    ].filter((candidate, index, values): candidate is string => Boolean(candidate) && values.indexOf(candidate) === index)
+    const failures: string[] = []
+    for (const candidate of candidates) {
+      try {
+        await run(candidate, ['-hide_banner', '-version'])
+        return candidate
+      } catch (cause) {
+        failures.push(`${candidate}: ${cause instanceof Error ? cause.message : String(cause)}`)
+      }
+    }
+    throw new Error(`没有可用的 FFmpeg。可设置 FRAMELOOP_FFMPEG_PATH 指向有效二进制。\n${failures.join('\n')}`)
+  })()
+  return resolvedFfmpeg
+}
+
+export async function* streamAnalysisFeatures(
+  inputPath: string,
+  fps: number,
+  options: { signal?: AbortSignal } = {},
+): AsyncGenerator<FrameFeature> {
+  if (!Number.isFinite(fps) || fps <= 0) throw new Error('fps 必须大于 0')
+  const executable = await resolveFfmpegExecutable()
   const path = resolve(inputPath)
   await access(path)
-  const directory = await mkdtemp(join(tmpdir(), 'frameloop-analysis-'))
-  const pattern = join(directory, 'frame_%06d.png')
+  const width = 32
+  const height = 32
+  const channels = 3
+  const frameBytes = width * height * channels
+  const child = spawn(executable, [
+    '-hide_banner', '-loglevel', 'error', '-i', path,
+    '-map', '0:v:0', '-an', '-sn', '-dn',
+    '-vf', `fps=${fps},scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
+    '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1',
+  ], {
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  let stderr = ''
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', (chunk: string) => {
+    stderr = `${stderr}${chunk}`.slice(-8000)
+  })
+  const completion = new Promise<{ code: number | null; error?: Error }>((resolveCompletion) => {
+    child.once('error', (error) => resolveCompletion({ code: null, error }))
+    child.once('close', (code) => resolveCompletion({ code }))
+  })
+  const abort = () => child.kill()
+  options.signal?.addEventListener('abort', abort, { once: true })
+  let pending: Buffer<ArrayBufferLike> = Buffer.alloc(0)
+  let index = 0
+  let completedNaturally = false
+  let completionResult: { code: number | null; error?: Error } | undefined
   try {
-    await run(ffmpegPath, [
-      '-hide_banner', '-loglevel', 'error', '-i', path,
-      '-vf', `fps=${fps},scale=32:32:force_original_aspect_ratio=decrease,pad=32:32:(ow-iw)/2:(oh-ih)/2`,
-      '-frames:v', String(maxFrames),
-      pattern,
-    ])
-    const files = (await readdir(directory)).filter((name) => name.endsWith('.png')).sort()
-    return await Promise.all(files.map(async (name, index) => {
-      const { data, info } = await sharp(join(directory, name)).removeAlpha().raw().toBuffer({ resolveWithObject: true })
-      return computeFeature(data, info.width, info.height, index, index / fps, info.channels)
-    }))
+    for await (const chunk of child.stdout) {
+      pending = pending.length === 0 ? chunk as Buffer : Buffer.concat([pending, chunk as Buffer])
+      while (pending.length >= frameBytes) {
+        const pixels = pending.subarray(0, frameBytes)
+        pending = pending.subarray(frameBytes)
+        yield computeFeature(pixels, width, height, index, index / fps, channels)
+        index += 1
+      }
+      if (options.signal?.aborted) throw new Error('视频分析已取消')
+    }
+    completedNaturally = true
   } finally {
-    await rm(directory, { recursive: true, force: true })
+    options.signal?.removeEventListener('abort', abort)
+    if (!completedNaturally && child.exitCode === null) child.kill()
+    completionResult = await completion
   }
+  const result = completionResult!
+  if (result.error) throw new Error(`无法启动 FFmpeg：${result.error.message}`, { cause: result.error })
+  if (result.code !== 0) throw new Error(`FFmpeg 流式解码失败：${stderr || `退出码 ${result.code}`}`)
+  if (pending.length !== 0) throw new Error(`FFmpeg 返回了不完整的原始帧：剩余 ${pending.length} 字节`)
 }
 
 export async function extractImageFeatures(
   framePaths: string[],
   fps: number,
 ): Promise<FrameFeature[]> {
+  const features: FrameFeature[] = []
+  for await (const feature of streamImageFeatures(framePaths, fps)) features.push(feature)
+  return features
+}
+
+export async function* streamImageFeatures(
+  framePaths: string[],
+  fps: number,
+  options: { signal?: AbortSignal } = {},
+): AsyncGenerator<FrameFeature> {
+  if (!Number.isFinite(fps) || fps <= 0) throw new Error('fps 必须大于 0')
   const paths = framePaths.map((path) => resolve(path))
-  await Promise.all(paths.map((path) => access(path)))
-  return await Promise.all(paths.map(async (path, index) => {
+  for (let index = 0; index < paths.length; index += 1) {
+    if (options.signal?.aborted) throw new Error('图片序列分析已取消')
+    const path = paths[index]!
+    await access(path)
     const { data, info } = await sharp(path)
       .resize(32, 32, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .ensureAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true })
-    return computeFeature(data, info.width, info.height, index, index / fps, info.channels)
-  }))
+    yield computeFeature(data, info.width, info.height, index, index / fps, info.channels)
+  }
 }
 
 export async function exportVideoFrames(options: {
@@ -181,13 +265,13 @@ export async function exportVideoFrames(options: {
   startTime: number
   endTime: number
 }): Promise<string[]> {
-  if (!ffmpegPath) throw new Error('当前平台没有可用的 FFmpeg 二进制文件')
+  const executable = await resolveFfmpegExecutable()
   const inputPath = resolve(options.inputPath)
   const outputDirectory = resolve(options.outputDirectory)
   await access(inputPath)
   if (options.endTime <= options.startTime) throw new Error('end_time 必须大于 start_time')
   await mkdir(outputDirectory, { recursive: true })
-  await run(ffmpegPath, [
+  await run(executable, [
     '-hide_banner', '-loglevel', 'error', '-y',
     '-ss', String(options.startTime), '-to', String(options.endTime),
     '-i', inputPath, '-vf', `fps=${options.fps}`,
@@ -248,8 +332,7 @@ export async function renderLoopContactSheet(
   candidates: LoopCandidate[],
   fps: number,
 ): Promise<Buffer> {
-  if (!ffmpegPath) throw new Error('当前平台没有可用的 FFmpeg 二进制文件')
-  const executable = ffmpegPath
+  const executable = await resolveFfmpegExecutable()
   const path = resolve(inputPath)
   const directory = await mkdtemp(join(tmpdir(), 'frameloop-review-'))
   const cellWidth = 240
@@ -282,6 +365,79 @@ export async function renderLoopContactSheet(
         <text x="${cellWidth + 10}" y="20" fill="#c7f36a" font-family="monospace" font-size="13">END F${candidate.endFrame + 1} · ${(candidate.endTime).toFixed(2)}s · ${Math.round(candidate.confidence * 100)}%</text>
       </svg>`)
       composites.push({ input: label, left: 0, top: top + cellHeight })
+    })
+    return await sharp({
+      create: { width, height, channels: 4, background: { r: 13, g: 15, b: 12, alpha: 1 } },
+    }).composite(composites).png().toBuffer()
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}
+
+export async function renderActionSegmentReviewSheet(
+  inputPath: string,
+  segment: ActionLoopSegment,
+  fps: number,
+  candidateLimit = 3,
+): Promise<Buffer> {
+  const executable = await resolveFfmpegExecutable()
+  const path = resolve(inputPath)
+  const directory = await mkdtemp(join(tmpdir(), 'frameloop-action-review-'))
+  const columns = 8
+  const cellWidth = 140
+  const cellHeight = 120
+  const labelHeight = 28
+  const rowHeight = cellHeight + labelHeight
+  const candidates = segment.candidates.slice(0, Math.max(1, candidateLimit))
+  const overviewFrames = Array.from({ length: columns }, (_, index) => Math.round(
+    segment.startFrame + (segment.endFrame - segment.startFrame) * index / Math.max(1, columns - 1),
+  ))
+  const seamRows = candidates.map((candidate) => [
+    candidate.endFrame - 2,
+    candidate.endFrame - 1,
+    candidate.endFrame,
+    candidate.startFrame,
+    candidate.startFrame + 1,
+    candidate.startFrame + 2,
+  ].map((frame) => Math.max(segment.startFrame, Math.min(segment.endFrame, frame))))
+  const rows = [overviewFrames, ...seamRows]
+  const uniqueFrames = [...new Set(rows.flat())]
+
+  try {
+    const framePaths = new Map<number, string>()
+    for (let offset = 0; offset < uniqueFrames.length; offset += 6) {
+      await Promise.all(uniqueFrames.slice(offset, offset + 6).map(async (frame) => {
+        const output = join(directory, `frame_${frame}.png`)
+        await run(executable, [
+          '-hide_banner', '-loglevel', 'error', '-ss', String(frame / fps), '-i', path,
+          '-frames:v', '1',
+          '-vf', `scale=${cellWidth}:${cellHeight}:force_original_aspect_ratio=decrease,pad=${cellWidth}:${cellHeight}:(ow-iw)/2:(oh-ih)/2`,
+          '-y', output,
+        ])
+        framePaths.set(frame, output)
+      }))
+    }
+
+    const width = columns * cellWidth
+    const height = rows.length * rowHeight
+    const composites: sharp.OverlayOptions[] = []
+    rows.forEach((frames, rowIndex) => {
+      const top = rowIndex * rowHeight
+      frames.forEach((frame, column) => {
+        const input = framePaths.get(frame)
+        if (input) composites.push({ input, left: column * cellWidth, top })
+      })
+      const rowTitle = rowIndex === 0
+        ? `ACTION ${segment.index + 1} OVERVIEW · F${segment.startFrame + 1}..F${segment.endFrame + 1}`
+        : `CANDIDATE ${rowIndex} · ${candidates[rowIndex - 1]!.source.toUpperCase()} · F${candidates[rowIndex - 1]!.startFrame + 1}..F${candidates[rowIndex - 1]!.endFrame + 1} · ${Math.round(candidates[rowIndex - 1]!.confidence * 100)}% · END-2 END-1 END | START START+1 START+2`
+      composites.push({
+        input: Buffer.from(`<svg width="${width}" height="${labelHeight}">
+          <rect width="100%" height="100%" fill="#151812"/>
+          <text x="10" y="19" fill="#c7f36a" font-family="monospace" font-size="13">${rowTitle}</text>
+        </svg>`),
+        left: 0,
+        top: top + cellHeight,
+      })
     })
     return await sharp({
       create: { width, height, channels: 4, background: { r: 13, g: 15, b: 12, alpha: 1 } },
