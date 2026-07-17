@@ -8,6 +8,7 @@ import {
 import {
   applyTemporalChromaKey,
   applyTemporalChromaKeyFrame,
+  captureVideoFrameRange,
   captureVideoFrames,
   createDemoFrames,
   measureAlphaFlicker,
@@ -72,6 +73,7 @@ interface AiMatteJob {
 const formatTime = (seconds: number) => `${seconds.toFixed(2)}s`
 const percent = (value: number) => `${Math.round(value * 100)}%`
 const safeFilename = (value: string) => value.trim().replace(/[^a-zA-Z0-9_-]+/g, '-') || 'animation'
+const loopKey = (candidate: LoopCandidate) => `${candidate.startFrame}:${candidate.endFrame}`
 
 export default function App() {
   const [file, setFile] = useState<File | null>(null)
@@ -82,6 +84,9 @@ export default function App() {
   const [analysisWindowSeconds, setAnalysisWindowSeconds] = useState(20)
   const [minLoopFrames, setMinLoopFrames] = useState(8)
   const [frames, setFrames] = useState<CapturedFrame[]>([])
+  const [detectedLoops, setDetectedLoops] = useState<LoopCandidate[]>([])
+  const [activeDetectedLoopKey, setActiveDetectedLoopKey] = useState<string | null>(null)
+  const [loadingDetectedLoop, setLoadingDetectedLoop] = useState(false)
   const [editorState, dispatchEditor] = useReducer(frameEditorReducer, undefined, () => createFrameEditorState())
   const [maskState, dispatchMask] = useReducer(maskEditorReducer, undefined, createMaskEditorState)
   const [compareSlots, setCompareSlots] = useState<[number, number]>([0, 1])
@@ -128,6 +133,7 @@ export default function App() {
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const activeMaskStrokeRef = useRef<ActiveMaskStroke | null>(null)
   const matteEngineRef = useRef<BrowserMatteEngine | null>(null)
+  const demoFramesRef = useRef<CapturedFrame[]>([])
   const cancelMattingRef = useRef(false)
   const captureAbortRef = useRef<AbortController | null>(null)
   const pendingProjectRangeRef = useRef<{ startFrame: number; endFrame: number } | null>(null)
@@ -282,6 +288,10 @@ export default function App() {
     setFile(nextFile)
     setSourceKind(nextFile ? 'video' : 'empty')
     setFrames([])
+    setDetectedLoops([])
+    setActiveDetectedLoopKey(null)
+    setLoadingDetectedLoop(false)
+    demoFramesRef.current = []
     dispatchEditor({ type: 'reset', frameIds: [] })
     dispatchMask({ type: 'reset' })
     setAutoMattes({})
@@ -342,8 +352,10 @@ export default function App() {
     captureAbortRef.current = controller
     try {
       const result = await captureVideoFrames(file, fps, minLoopFrames, analysisWindowSeconds, setProgress, controller.signal)
+      setDetectedLoops(result.scan.candidates)
+      setActiveDetectedLoopKey(result.scan.selectedCandidate ? loopKey(result.scan.selectedCandidate) : null)
       acceptFrames(result.frames)
-      setProjectMessage(`已流式扫描完整视频 · ${result.scan.sampledFrames} 个采样帧 · ${result.scan.windowsAnalyzed} 个窗口 · 仅载入最佳候选 ${result.frames.length} 帧`)
+      setProjectMessage(`已流式扫描完整视频 · 识别 ${result.scan.candidates.length} 个循环 · 当前载入 ${result.frames.length} 帧，可在时间线上方切换`)
     } catch (cause) {
       if (controller.signal.aborted) setProjectMessage('已取消视频流式分析')
       else setError(cause instanceof Error ? cause.message : String(cause))
@@ -369,7 +381,55 @@ export default function App() {
     setError(null)
     setFps(12)
     setMinLoopFrames(6)
-    acceptFrames(createDemoFrames(12, 8, 3))
+    const demoFrames = createDemoFrames(12, 8, 3)
+    const demoLoops = detectLoopCandidates(demoFrames.map((frame, index) => ({
+      ...frame.feature,
+      index,
+      timestamp: index / 12,
+    })), { minFrames: 6, topK: 6, motionWindow: 3 })
+    const selectedLoop = demoLoops[0]
+    demoFramesRef.current = demoFrames
+    setDetectedLoops(demoLoops)
+    setActiveDetectedLoopKey(selectedLoop ? loopKey(selectedLoop) : null)
+    acceptFrames(selectedLoop
+      ? demoFrames.slice(selectedLoop.startFrame, selectedLoop.endFrame + 1)
+      : demoFrames)
+  }
+
+  const loadDetectedLoop = async (candidate: LoopCandidate) => {
+    if (loadingDetectedLoop || loopKey(candidate) === activeDetectedLoopKey) return
+    if (sourceKind === 'demo') {
+      const nextFrames = demoFramesRef.current.slice(candidate.startFrame, candidate.endFrame + 1)
+      setActiveDetectedLoopKey(loopKey(candidate))
+      acceptFrames(nextFrames)
+      setProjectMessage(`正在编辑演示循环 ${candidate.startFrame + 1} → ${candidate.endFrame + 1} · ${nextFrames.length} 帧`)
+      return
+    }
+    if (!file) return
+    const controller = new AbortController()
+    captureAbortRef.current?.abort()
+    captureAbortRef.current = controller
+    setLoadingDetectedLoop(true)
+    setError(null)
+    setProgress({ phase: 'capturing', current: 0, total: candidate.frameCount })
+    try {
+      const nextFrames = await captureVideoFrameRange(
+        file,
+        fps,
+        candidate.startFrame,
+        candidate.endFrame,
+        setProgress,
+        controller.signal,
+      )
+      setActiveDetectedLoopKey(loopKey(candidate))
+      acceptFrames(nextFrames)
+      setProjectMessage(`正在编辑循环 ${candidate.startFrame + 1} → ${candidate.endFrame + 1} · ${nextFrames.length} 帧 · ${formatTime(candidate.startFrame / fps)} — ${formatTime(candidate.endFrame / fps)}`)
+    } catch (cause) {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      if (captureAbortRef.current === controller) captureAbortRef.current = null
+      setLoadingDetectedLoop(false)
+    }
   }
 
   const useCandidate = (candidate: LoopCandidate) => {
@@ -886,6 +946,37 @@ export default function App() {
           <section className="workspace analysis-grid">
             <div className="panel timeline-panel">
               <div className="panel-heading"><span>LOOP / TIMELINE</span><small>{editedFrames.length} VISIBLE · {editorState.present.hidden.length} HIDDEN</small></div>
+              {detectedLoops.length > 0 && (
+                <div className="detected-loop-picker">
+                  <div className="detected-loop-heading">
+                    <span>识别出的全部循环</span>
+                    <small>{loadingDetectedLoop ? `LOADING ${progress.current}/${progress.total}` : `${detectedLoops.length} DETECTED · CHOOSE ONE TO EDIT`}</small>
+                  </div>
+                  <div className="detected-loop-list" role="group" aria-label="识别出的动画循环">
+                    {detectedLoops.map((candidate, index) => {
+                      const active = loopKey(candidate) === activeDetectedLoopKey
+                      return (
+                        <button
+                          key={loopKey(candidate)}
+                          type="button"
+                          className={active ? 'active' : ''}
+                          disabled={loadingDetectedLoop}
+                          aria-pressed={active}
+                          onClick={() => void loadDetectedLoop(candidate)}
+                        >
+                          <b>{String(index + 1).padStart(2, '0')}</b>
+                          <span>
+                            <strong>{formatTime(candidate.startFrame / fps)} — {formatTime(candidate.endFrame / fps)}</strong>
+                            <small>SRC {candidate.startFrame + 1} → {candidate.endFrame + 1} · {candidate.frameCount} 帧</small>
+                          </span>
+                          <output>{percent(candidate.confidence)}</output>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p>选择一个循环后才载入该段原始分辨率帧；其他识别结果会保留在这里，随时可以切换编辑。</p>
+                </div>
+              )}
               <div className="timeline-toolbar">
                 <span>帧差曲线</span>
                 <label>缩放 <input aria-label="时间线缩放" type="range" min="0.65" max="1.8" step="0.05" value={timelineZoom} onChange={(event) => setTimelineZoom(Number(event.target.value))} /></label>
@@ -1016,7 +1107,7 @@ export default function App() {
                   </div>
                   <div className="ai-matte-card">
                     <div className="ai-matte-heading">
-                      <span>LOCAL AI / MODNET</span>
+                      <span>LOCAL AI / BEN2</span>
                       <small>{matteBackend?.toUpperCase() ?? 'NOT LOADED'}</small>
                     </div>
                     <p>{DEFAULT_MATTE_MODEL} · {DEFAULT_MATTE_MODEL_LICENSE} · 模型首次使用时下载，推理素材不上传。</p>
@@ -1038,7 +1129,7 @@ export default function App() {
                     {matteMode === 'ai' && previewFrame && !autoMattes[previewFrame.index] && <p className="backend-fallback">当前帧还没有自动蒙版，预览暂时显示原图。</p>}
                   </div>
                   <div className={`chroma-controls ${matteMode === 'chroma' ? 'active' : ''}`}>
-                    <div className="subsection-heading"><span>CHROMA / SOLID COLOR</span><small>{matteMode === 'chroma' ? 'ACTIVE' : 'INACTIVE'}</small></div>
+                    <div className="subsection-heading"><span>CHROMA / ALPHA + DESPILL</span><small>{matteMode === 'chroma' ? 'ACTIVE' : 'INACTIVE'}</small></div>
                     <Control label="背景色" value={keyColor.toUpperCase()}>
                       <input className="color-input" type="color" value={keyColor} onChange={(event) => setKeyColor(event.target.value)} />
                     </Control>

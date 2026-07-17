@@ -16,6 +16,7 @@ export interface StreamingLoopAnalysisOptions {
   overlapFrames: number
   topKPerSegment: number
   motionWindow?: number
+  onProgress?: (sampledFrames: number, windowsAnalyzed: number) => void | Promise<void>
 }
 
 export interface StreamingAnalysisWindow {
@@ -74,6 +75,7 @@ export interface AnchoredSegmentAnalysisOptions {
   topKPerSegment: number
   motionWindow?: number
   evidenceCycles?: number
+  onProgress?: (sampledFrames: number, segmentsAnalyzed: number) => void | Promise<void>
 }
 
 function offsetTransition(metric: FrameTransitionMetric, offset: number): FrameTransitionMetric {
@@ -227,10 +229,14 @@ export async function analyzeFeatureStream(
     peakBufferedFrames = Math.max(peakBufferedFrames, buffer.length)
     if (buffer.length < windowFrames) continue
     analyzeWindow(buffer)
+    await options.onProgress?.(sampledFrames, windows.length)
     buffer = buffer.slice(stride)
   }
 
-  if (buffer.length >= minFrames && buffer.at(-1)!.index !== lastAnalyzedEndFrame) analyzeWindow(buffer)
+  if (buffer.length >= minFrames && buffer.at(-1)!.index !== lastAnalyzedEndFrame) {
+    analyzeWindow(buffer)
+    await options.onProgress?.(sampledFrames, windows.length)
+  }
 
   return {
     sampledFrames,
@@ -342,6 +348,7 @@ export async function analyzeAnchoredActionSegments(
     const nextCut = normalizedCuts[nextCutIndex]
     if (nextCut !== undefined && feature.index >= nextCut && segmentStart) {
       finalize()
+      await options.onProgress?.(feature.index, segments.length)
       segmentStart = null
       segmentEnd = null
       sampledFrames = 0
@@ -352,7 +359,11 @@ export async function analyzeAnchoredActionSegments(
     segmentEnd = feature
     sampledFrames += 1
     if (evidence.length < evidenceLimit) evidence.push(feature)
+    if ((feature.index + 1) % 25 === 0) {
+      await options.onProgress?.(feature.index + 1, segments.length)
+    }
   }
   finalize()
+  await options.onProgress?.(segmentEnd ? segmentEnd.index + 1 : 0, segments.length)
   return segments
 }

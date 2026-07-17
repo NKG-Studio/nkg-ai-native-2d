@@ -1,3 +1,5 @@
+import { refineAutomaticMatte } from './chroma'
+
 export type MatteBackend = 'webgpu' | 'wasm'
 
 export interface MatteLoadProgress {
@@ -26,8 +28,8 @@ export interface BrowserMatteEngineOptions {
   onProgress?: (progress: MatteLoadProgress) => void
 }
 
-export const DEFAULT_MATTE_MODEL = 'Xenova/modnet'
-export const DEFAULT_MATTE_MODEL_LICENSE = 'Apache-2.0'
+export const DEFAULT_MATTE_MODEL = 'onnx-community/BEN2-ONNX'
+export const DEFAULT_MATTE_MODEL_LICENSE = 'MIT'
 
 function messageFrom(cause: unknown) {
   return cause instanceof Error ? cause.message : String(cause)
@@ -104,20 +106,19 @@ export async function createTransformersMattePipeline(
   const { pipeline } = await import('@huggingface/transformers')
   const segmenter = await pipeline('background-removal', DEFAULT_MATTE_MODEL, {
     device: backend,
-    dtype: backend === 'webgpu' ? 'fp16' : 'q8',
+    // BEN2-ONNX currently ships model_fp16.onnx; both browser backends must
+    // request that published artifact instead of a non-existent q8 variant.
+    dtype: 'fp16',
     progress_callback: (progress) => onProgress?.(progress as MatteLoadProgress),
   })
 
   return {
     async segment(source) {
       const result = await segmenter(source)
-      const output = result.toCanvas() as CanvasImageSource & { width: number; height: number }
+      const matte = Array.isArray(result) ? result[0] : result
+      const output = matte?.toCanvas() as CanvasImageSource & { width: number; height: number }
       if (!output?.width || !output?.height) throw new Error('分割模型没有返回可用的 Canvas 蒙版')
-      const canvas = document.createElement('canvas')
-      canvas.width = output.width
-      canvas.height = output.height
-      canvas.getContext('2d')!.drawImage(output, 0, 0)
-      return canvas
+      return refineAutomaticMatte(source, output)
     },
     dispose: () => segmenter.dispose(),
   }

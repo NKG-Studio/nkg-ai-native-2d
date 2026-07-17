@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { stabilizeTemporalAlpha } from './media'
+import type { LoopCandidate } from '@frameloop/core'
+import { mergeLoopCandidates, stabilizeTemporalAlpha } from './media'
 
 describe('stabilizeTemporalAlpha', () => {
   it('uses the temporal median to suppress a one-frame alpha spike', () => {
@@ -13,5 +14,28 @@ describe('stabilizeTemporalAlpha', () => {
     const current = new Uint8ClampedArray([42, 128])
     const result = stabilizeTemporalAlpha(new Uint8ClampedArray([0, 0]), current, new Uint8ClampedArray([255, 255]), 0)
     expect(Array.from(result)).toEqual([42, 128])
+  })
+})
+
+describe('mergeLoopCandidates', () => {
+  const candidate = (startFrame: number, endFrame: number, score: number) => ({
+    startFrame,
+    endFrame,
+    frameCount: endFrame - startFrame + 1,
+    score,
+  }) as LoopCandidate
+
+  it('keeps distinct loops across the full source while removing only near duplicates', () => {
+    const loops = mergeLoopCandidates([
+      candidate(100, 111, 0.2),
+      candidate(10, 21, 0.1),
+      candidate(11, 22, 0.15),
+      candidate(300, 315, 0.18),
+    ])
+    expect(loops.map((loop) => [loop.startFrame, loop.endFrame])).toEqual([
+      [10, 21],
+      [300, 315],
+      [100, 111],
+    ])
   })
 })

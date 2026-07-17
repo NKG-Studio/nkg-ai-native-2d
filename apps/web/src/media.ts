@@ -4,6 +4,7 @@ import {
   type FrameFeature,
   type LoopCandidate,
 } from '@frameloop/core'
+import { despillChromaPixels, parseHexColor } from './chroma'
 import type { CapturedFrame, ExtractionProgress } from './types'
 
 const FEATURE_SIZE = 24
@@ -108,7 +109,7 @@ function offsetCandidate(candidate: LoopCandidate, offset: number): LoopCandidat
   }
 }
 
-function mergeCandidates(candidates: LoopCandidate[]) {
+export function mergeLoopCandidates(candidates: LoopCandidate[]) {
   const result: LoopCandidate[] = []
   for (const candidate of candidates.sort((a, b) => a.score - b.score || a.frameCount - b.frameCount)) {
     const duplicate = result.some((picked) =>
@@ -117,6 +118,72 @@ function mergeCandidates(candidates: LoopCandidate[]) {
     if (!duplicate) result.push(candidate)
   }
   return result
+}
+
+async function captureFrameRangeFromVideo(
+  video: HTMLVideoElement,
+  fps: number,
+  requestedStart: number,
+  requestedEnd: number,
+  onProgress?: (progress: ExtractionProgress) => void,
+  signal?: AbortSignal,
+) {
+  const totalFrames = Math.max(2, Math.ceil(video.duration * fps))
+  const startFrame = Math.max(0, Math.min(totalFrames - 1, Math.floor(requestedStart)))
+  const endFrame = Math.max(startFrame, Math.min(totalFrames - 1, Math.floor(requestedEnd)))
+  const captureTotal = endFrame - startFrame + 1
+  const frames: CapturedFrame[] = []
+  for (let sourceIndex = startFrame; sourceIndex <= endFrame; sourceIndex += 1) {
+    if (signal?.aborted) throw new Error('视频分析已取消')
+    const timestamp = Math.min(video.duration - 0.001, sourceIndex / fps)
+    await seek(video, timestamp)
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const context = canvas.getContext('2d', { willReadFrequently: true })!
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    frames.push({
+      index: sourceIndex,
+      timestamp,
+      canvas,
+      previewUrl: canvas.toDataURL('image/jpeg', 0.72),
+      feature: extractFeature(canvas, sourceIndex, timestamp),
+    })
+    onProgress?.({ phase: 'capturing', current: frames.length, total: captureTotal })
+    if (frames.length % 6 === 0) await new Promise((resolve) => window.setTimeout(resolve, 0))
+  }
+  return frames
+}
+
+export async function captureVideoFrameRange(
+  file: File,
+  fps: number,
+  startFrame: number,
+  endFrame: number,
+  onProgress?: (progress: ExtractionProgress) => void,
+  signal?: AbortSignal,
+): Promise<CapturedFrame[]> {
+  const url = URL.createObjectURL(file)
+  const video = document.createElement('video')
+  video.muted = true
+  video.preload = 'auto'
+  video.src = url
+  try {
+    await waitForEvent(video, 'loadedmetadata')
+    if (!Number.isFinite(video.duration) || video.duration <= 0) throw new Error('无法读取视频时长')
+    return await captureFrameRangeFromVideo(
+      video,
+      Math.max(0.01, fps),
+      startFrame,
+      endFrame,
+      onProgress,
+      signal,
+    )
+  } finally {
+    video.removeAttribute('src')
+    video.load()
+    URL.revokeObjectURL(url)
+  }
 }
 
 export async function captureVideoFrames(
@@ -143,8 +210,6 @@ export async function captureVideoFrames(
     const windowFrames = Math.max(safeMinLoopFrames, Math.round(Math.max(0.1, analysisWindowSeconds) * safeFps))
     const overlapFrames = Math.min(windowFrames - 1, Math.max(safeMinLoopFrames, Math.floor(windowFrames / 4)))
     const stride = Math.max(1, windowFrames - overlapFrames)
-    const width = video.videoWidth
-    const height = video.videoHeight
     const sample = document.createElement('canvas')
     sample.width = FEATURE_SIZE
     sample.height = FEATURE_SIZE
@@ -193,32 +258,13 @@ export async function captureVideoFrames(
     }
     if (buffer.length >= safeMinLoopFrames && buffer.at(-1)!.index !== lastAnalyzedEndFrame) analyzeWindow(buffer)
 
-    const candidates = mergeCandidates(windowCandidates)
+    const candidates = mergeLoopCandidates(windowCandidates)
     const selectedCandidate = candidates[0] ?? null
     const captureStart = selectedCandidate?.startFrame ?? 0
     const captureEnd = selectedCandidate?.endFrame ?? Math.min(total - 1, safeMinLoopFrames - 1)
-    const captureTotal = captureEnd - captureStart + 1
-    const frames: CapturedFrame[] = []
-    for (let sourceIndex = captureStart; sourceIndex <= captureEnd; sourceIndex += 1) {
-      if (signal?.aborted) throw new Error('视频分析已取消')
-      const timestamp = Math.min(duration - 0.001, sourceIndex / safeFps)
-      await seek(video, timestamp)
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const context = canvas.getContext('2d', { willReadFrequently: true })!
-      context.drawImage(video, 0, 0, width, height)
-      const previewUrl = canvas.toDataURL('image/jpeg', 0.72)
-      frames.push({
-        index: sourceIndex,
-        timestamp,
-        canvas,
-        previewUrl,
-        feature: extractFeature(canvas, sourceIndex, timestamp),
-      })
-      onProgress?.({ phase: 'capturing', current: frames.length, total: captureTotal })
-      if (frames.length % 6 === 0) await new Promise((resolve) => window.setTimeout(resolve, 0))
-    }
+    const frames = await captureFrameRangeFromVideo(
+      video, safeFps, captureStart, captureEnd, onProgress, signal,
+    )
     return {
       frames,
       scan: { duration, sampledFrames: total, windowsAnalyzed, peakBufferedFrames, candidates, selectedCandidate },
@@ -283,7 +329,7 @@ export function applyChromaKey(
   tolerance: number,
   feather: number,
 ): HTMLCanvasElement {
-  return renderWithAlpha(source, calculateChromaAlpha(source, keyColor, tolerance, feather))
+  return renderWithAlpha(source, calculateChromaAlpha(source, keyColor, tolerance, feather), keyColor)
 }
 
 function calculateChromaAlpha(
@@ -311,14 +357,24 @@ function calculateChromaAlpha(
   return alpha
 }
 
-function renderWithAlpha(source: HTMLCanvasElement, alpha: Uint8ClampedArray): HTMLCanvasElement {
+function renderWithAlpha(
+  source: HTMLCanvasElement,
+  alpha: Uint8ClampedArray,
+  keyColor?: string,
+): HTMLCanvasElement {
   const target = document.createElement('canvas')
   target.width = source.width
   target.height = source.height
   const context = target.getContext('2d', { willReadFrequently: true })!
   context.drawImage(source, 0, 0)
   const image = context.getImageData(0, 0, target.width, target.height)
-  for (let index = 0; index < alpha.length; index += 1) image.data[index * 4 + 3] = alpha[index] ?? 255
+  const output = keyColor
+    ? despillChromaPixels(image.data, alpha, target.width, target.height, parseHexColor(keyColor))
+    : image.data
+  if (!keyColor) {
+    for (let index = 0; index < alpha.length; index += 1) output[index * 4 + 3] = alpha[index] ?? 255
+  }
+  image.data.set(output)
   context.putImageData(image, 0, 0)
   return target
 }
@@ -354,7 +410,11 @@ export function applyTemporalChromaKeyFrame(
   const currentAlpha = calculateChromaAlpha(source, keyColor, tolerance, feather)
   const previousAlpha = previous ? calculateChromaAlpha(previous, keyColor, tolerance, feather) : undefined
   const nextAlpha = next ? calculateChromaAlpha(next, keyColor, tolerance, feather) : undefined
-  return renderWithAlpha(source, stabilizeTemporalAlpha(previousAlpha, currentAlpha, nextAlpha, consistency))
+  return renderWithAlpha(
+    source,
+    stabilizeTemporalAlpha(previousAlpha, currentAlpha, nextAlpha, consistency),
+    keyColor,
+  )
 }
 
 /** 使用三帧滑动窗口批量抠图，内存中最多保留三张 Alpha 蒙版。 */
@@ -374,6 +434,7 @@ export function applyTemporalChromaKey(
     result.push(renderWithAlpha(
       sources[index]!,
       stabilizeTemporalAlpha(previousAlpha, currentAlpha, nextAlpha, consistency),
+      keyColor,
     ))
     previousAlpha = currentAlpha
     currentAlpha = nextAlpha ?? currentAlpha

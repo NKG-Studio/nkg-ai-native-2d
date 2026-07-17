@@ -26,8 +26,8 @@ FrameLoop Studio 会分析周期、自相似、首尾闭合、运动能量、运
 - **视频本地抽帧**：原生 Video + Canvas 定点采样，素材无需上传服务器。
 - **自动循环检测**：返回多个候选区间、置信度和分项诊断，不只比较首尾像素。
 - **可视化精修**：差异曲线、重复帧/镜头切换标记、A/B 接缝对比、缩放时间线及完整撤销/重做。
-- **抠图与修边**：绿幕/蓝幕等任意色度键、羽化、三帧时序稳定，以及移除/恢复笔刷和相邻帧传播。
-- **浏览器本地 AI 抠图**：按需加载 MODNet，优先 WebGPU，失败时自动回退量化 WASM。
+- **抠图与修边**：任意色度键、Alpha 羽化、三帧时序稳定，以及独立的线性光前景色恢复 / 边缘去色溢出；调 Alpha 时不再靠侵蚀主体来消除彩边。
+- **浏览器本地 AI 抠图**：按需加载 BEN2 置信度引导 Matting，优先 WebGPU，失败时自动回退 WASM。
 - **专业 Sprite Sheet**：支持规则网格和 Tight Trim 紧凑排布、透明边界裁切、Pivot、逐帧时长与动画命名。
 - **引擎友好导出**：PNG 配套 Generic、Aseprite、Godot 和 Unity 数据预设。
 - **项目恢复**：视频、帧编辑、循环区间、抠图蒙版和导出设置均可保存到 IndexedDB。
@@ -66,9 +66,9 @@ Godot 预设用 `AtlasTexture` 的 `region` 与 `margin` 还原裁切帧；Unity
 
 ## 本地 AI 与隐私
 
-首次使用 AI 抠图时，浏览器会从 Hugging Face 下载 MODNet 模型，后续由浏览器缓存。视频帧、手工蒙版和推理结果不会由本项目上传。
+首次使用 AI 抠图时，浏览器会从 Hugging Face 下载 BEN2 ONNX 模型，后续由浏览器缓存。视频帧、手工蒙版和推理结果不会由本项目上传。
 
-MODNet 更擅长人物与类人角色。道具、粒子、抽象图形或极端风格素材，通常更适合色度键，再配合逐帧笔刷修正。顶部的 **保存项目** 会把当前工作写入浏览器 IndexedDB；目前提供一个“最近项目”槽位，新保存会覆盖旧存档，但不会修改磁盘上的源文件。
+BEN2 面向通用前景对象并会重点细化不确定边缘。对于纯色背景，色度键路径还会用已知背景色恢复半透明像素的前景 RGB，并只在轮廓局部抑制烘焙进去的色溢出；主体内部颜色不会随羽化参数一起被改写。顶部的 **保存项目** 会把当前工作写入浏览器 IndexedDB；目前提供一个“最近项目”槽位，新保存会覆盖旧存档，但不会修改磁盘上的源文件。
 
 ## 让 Codex 等 AI 调用
 
@@ -97,13 +97,22 @@ codex mcp add frameloop -- node apps/mcp/dist/index.js
 | `export_loop_frames` | 按时间区间与 FPS 导出 PNG 序列 | 是 |
 | `export_reviewed_action` | 按 AI 确认的排他结束帧导出动作并保存复核清单 | 是 |
 | `compose_sprite_sheet` | 合成透明 Sprite Sheet 与 JSON 索引 | 是 |
+| `create_action_export_plan` | 预检多个动作的边界、名称、冲突、文件数和磁盘空间 | 仅写临时计划 |
+| `export_action_batch` | 按计划批量导出多个动作，支持失败、跳过和替换冲突策略 | 是 |
+| `export_sprite_bundle` | 将多个动画合并为 Tight/Grid Atlas，并生成 Generic、Aseprite、Godot 或 Unity 数据 | 是 |
+| `validate_sprite_bundle` | 检查 Atlas、Manifest、引擎配套文件、重复末帧、接缝与 Alpha 抖动 | 否 |
+| `apply_chroma_key_batch` | 批量色度键、三帧时序稳定与边缘去色溢出 | 是 |
+| `apply_ai_matte_batch` | 使用本地 BEN2/Transformers.js 批量生成透明 PNG | 是 |
+
+长视频分析、图片序列分析、帧导出、Sprite 合成和批量抠图均支持 MCP 标准进度通知；客户端提供 `progressToken` 后即可显示持续进度。批量导出采用“先计划、后执行”两阶段设计：计划阶段不会写用户输出目录，执行前可以检查所有动作边界、文件冲突和预计磁盘占用。
 
 推荐工作流：
 
 1. AI 调用 `inspect_video` 和 `analyze_video_loop`，获得硬切动作段及每段 3–5 个代表候选。
 2. AI 分页调用 `review_video_action_segments`，同时观察全段动作概览和候选接缝前后三帧。
 3. AI 返回动作名称、最早有效结束帧、末帧是否重复首帧和 `export_end_exclusive`。
-4. 使用者确认边界与输出目录后，调用 `export_reviewed_action`。
+4. 单个动作可调用 `export_reviewed_action`；多个动作先调用 `create_action_export_plan`，确认计划后再调用 `export_action_batch`。
+5. 需要透明背景时调用 `apply_chroma_key_batch` 或 `apply_ai_matte_batch`，最后使用 `export_sprite_bundle` 合并多动画 Atlas，并用 `validate_sprite_bundle` 做闭环校验。
 
 ## 循环评分是怎样工作的
 
@@ -141,14 +150,13 @@ packages/core  循环检测与 Sprite 布局算法
 - 自动评分是候选排序，不是绝对真值；动作语义仍建议由人或多模态模型复核。
 - 项目存储目前只有一个本地槽位，尚未提供多项目命名、缩略图和配额管理。
 - Unity 预设需要项目侧导入脚本；后续会提供可直接放入 `Editor/` 的导入器。
-- 下一阶段计划加入稠密光流闭合误差、动作相位语义模型、MCP 长任务资源/进度通知，以及 Streamable HTTP 远程部署。
+- 下一阶段计划加入稠密光流闭合误差、动作相位语义模型、可恢复 MCP Tasks，以及 Streamable HTTP 远程部署。
 
 ## 第三方项目
 
 产品边界受到 [FrameRonin](https://github.com/systemchester/FrameRonin) 启发，本项目使用独立代码和独立架构实现。
 
-- [MODNet](https://github.com/ZHKKKe/MODNet)：Apache-2.0，用于实时无 Trimap 人像/角色抠图。
-- [Xenova/modnet](https://huggingface.co/Xenova/modnet)：Apache-2.0，浏览器 ONNX 权重。
+- [BEN / BEN2](https://arxiv.org/abs/2501.06230)：置信度引导 Matting 的通用前景分割；浏览器使用 [MIT 许可的 Transformers.js ONNX 转换](https://huggingface.co/onnx-community/BEN2-ONNX)。
 - [Transformers.js](https://github.com/huggingface/transformers.js)：Apache-2.0，提供浏览器 ONNX Runtime、WebGPU 与 WASM 推理。
 
 如果这个工具帮你省下了逐帧试循环的时间，欢迎 Star、提交 Issue，或分享你的动画工作流。

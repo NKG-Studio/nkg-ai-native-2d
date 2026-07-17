@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@frameloop/core": "*",
+    "@huggingface/transformers": "^4.2.0",
     "@modelcontextprotocol/sdk": "^1.18.1",
     "ffmpeg-static": "^5.2.0",
     "ffprobe-static": "^3.1.0",

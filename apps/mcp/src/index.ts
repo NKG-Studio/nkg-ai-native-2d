@@ -6,6 +6,14 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 import { pageAnalysisReport, readAnalysisReport, writeAnalysisReport } from './reports.js'
 import { analyzeAnchoredActionSegments, analyzeFeatureStream } from './streaming.js'
+import { createProgressReporter } from './progress.js'
+import {
+  createActionExportPlan,
+  executeActionExportPlan,
+  readActionExportPlan,
+} from './export-plans.js'
+import { exportSpriteBundle, validateSpriteBundle } from './sprite-bundle.js'
+import { applyAiMatteBatch, applyChromaKeyBatch } from './matting.js'
 import {
   createSpriteSheetFile,
   exportVideoFrames,
@@ -20,12 +28,29 @@ import {
 const server = new McpServer(
   { name: 'frameloop-mcp', version: '0.1.0' },
   {
-    instructions: '先用 inspect_video 获取媒体信息，再用 analyze_video_loop 自动检测多段动作并生成段首闭环与段内周期核心候选。随后调用 review_video_action_segments，让多模态 AI 根据动作概览和六帧接缝选择最早完整闭环；写出帧前应向用户说明目标路径、export_start_frame 与 export_end_exclusive 并确认，再调用 export_reviewed_action。所有路径均为运行 MCP 进程所在机器的本地绝对或相对路径。',
+    instructions: '先用 inspect_video 获取媒体信息，再用 analyze_video_loop 自动检测多段动作并生成段首闭环与段内周期核心候选。随后调用 review_video_action_segments，让多模态 AI 根据动作概览和六帧接缝选择最早完整闭环。单动作可在确认路径和边界后调用 export_reviewed_action；多动作应先调用 create_action_export_plan 展示完整计划，由用户确认后再调用 export_action_batch。透明背景使用 apply_chroma_key_batch 或 apply_ai_matte_batch，最终用 export_sprite_bundle 合并并用 validate_sprite_bundle 验证。所有路径均为运行 MCP 进程所在机器的本地绝对或相对路径。',
   },
 )
 
 const textResult = (value: unknown) => ({
   content: [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }],
+})
+
+const actionReviewSchema = z.object({
+  action_index: z.number().int().nonnegative(),
+  action_name: z.string().min(1),
+  export_start_frame: z.number().int().nonnegative().optional(),
+  export_end_exclusive: z.number().int().positive(),
+  end_frame_duplicates_start: z.boolean(),
+  ai_confidence: z.number().min(0).max(1).optional(),
+  ai_reason: z.string().optional(),
+})
+
+const bundleAnimationSchema = z.object({
+  name: z.string().min(1),
+  frame_paths: z.array(z.string().min(1)).min(1),
+  durations: z.array(z.number().int().positive()).optional(),
+  source_frame_ids: z.array(z.number().int().nonnegative()).optional(),
 })
 
 server.registerTool(
@@ -57,6 +82,10 @@ server.registerTool(
   },
   async ({ path, fps, min_loop_seconds, max_loop_seconds, analysis_window_seconds, window_overlap_seconds, top_k }, extra) => {
     const info = await probeVideo(path)
+    const expectedFrames = Math.max(1, Math.ceil(info.duration * fps))
+    const progressTotal = expectedFrames * 2 + 3
+    const reportProgress = createProgressReporter(extra)
+    await reportProgress({ progress: 0, total: progressTotal, message: '准备视频分析', force: true })
     const minFrames = Math.max(2, Math.round(min_loop_seconds * fps))
     const maxFrames = max_loop_seconds ? Math.max(minFrames, Math.round(max_loop_seconds * fps)) : undefined
     const requestedWindowFrames = Math.max(minFrames, Math.round(analysis_window_seconds * fps))
@@ -71,6 +100,11 @@ server.registerTool(
       overlapFrames,
       topKPerSegment: top_k,
       motionWindow: 3,
+      onProgress: (sampled, windows) => reportProgress({
+        progress: Math.min(expectedFrames, sampled),
+        total: progressTotal,
+        message: `已扫描 ${sampled} 帧 · ${windows} 个窗口`,
+      }),
     })
     const actionSegments = await analyzeAnchoredActionSegments(
       streamAnalysisFeatures(path, fps, { signal: extra.signal }),
@@ -80,6 +114,11 @@ server.registerTool(
         maxFrames: maxFrames ?? windowFrames,
         topKPerSegment: Math.min(top_k, 5),
         motionWindow: 3,
+        onProgress: (sampled, segments) => reportProgress({
+          progress: expectedFrames + Math.min(expectedFrames, sampled),
+          total: progressTotal,
+          message: `已复核 ${sampled} 帧 · ${segments} 个动作段`,
+        }),
       },
     )
     analysis.actionSegments = actionSegments
@@ -126,6 +165,12 @@ server.registerTool(
     }
     const initialActionSheets = await Promise.all(actionSegments.slice(0, 2).map((segment) =>
       renderActionSegmentReviewSheet(path, segment, fps, Math.min(3, top_k))))
+    await reportProgress({
+      progress: progressTotal,
+      total: progressTotal,
+      message: '视频分析与初始复核图已完成',
+      force: true,
+    })
     return {
       content: [
         { type: 'text' as const, text: JSON.stringify(result, null, 2) },
@@ -265,6 +310,10 @@ server.registerTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   },
   async ({ frame_paths, fps, min_loop_frames, max_loop_frames, analysis_window_frames, window_overlap_frames, top_k }, extra) => {
+    const expectedFrames = frame_paths.length
+    const progressTotal = expectedFrames * 2 + 2
+    const reportProgress = createProgressReporter(extra)
+    await reportProgress({ progress: 0, total: progressTotal, message: '准备分析图片序列', force: true })
     const windowFrames = max_loop_frames
       ? Math.max(analysis_window_frames, max_loop_frames * 2)
       : Math.max(analysis_window_frames, min_loop_frames)
@@ -276,6 +325,11 @@ server.registerTool(
       overlapFrames,
       topKPerSegment: top_k,
       motionWindow: 3,
+      onProgress: (sampled, windows) => reportProgress({
+        progress: Math.min(expectedFrames, sampled),
+        total: progressTotal,
+        message: `已分析 ${sampled}/${expectedFrames} 帧 · ${windows} 个窗口`,
+      }),
     })
     const actionSegments = await analyzeAnchoredActionSegments(
       streamImageFeatures(frame_paths, fps, { signal: extra.signal }),
@@ -285,6 +339,11 @@ server.registerTool(
         maxFrames: max_loop_frames ?? windowFrames,
         topKPerSegment: Math.min(top_k, 5),
         motionWindow: 3,
+        onProgress: (sampled, segments) => reportProgress({
+          progress: expectedFrames + Math.min(expectedFrames, sampled),
+          total: progressTotal,
+          message: `已复核 ${sampled}/${expectedFrames} 帧 · ${segments} 个动作段`,
+        }),
       },
     )
     analysis.actionSegments = actionSegments
@@ -298,6 +357,12 @@ server.registerTool(
     })
     const candidates = firstPage.candidatePage.items
     const contactSheet = await renderImageLoopContactSheet(frame_paths, candidates)
+    await reportProgress({
+      progress: progressTotal,
+      total: progressTotal,
+      message: '图片序列分析已完成',
+      force: true,
+    })
     const result = {
       frameCount: analysis.sampledFrames,
       fps,
@@ -339,9 +404,15 @@ server.registerTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
-  async ({ path, output_directory, fps, start_time, end_time }) => textResult({
-    files: await exportVideoFrames({ inputPath: path, outputDirectory: output_directory, fps, startTime: start_time, endTime: end_time }),
-  }),
+  async ({ path, output_directory, fps, start_time, end_time }, extra) => {
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: 1, message: '开始导出循环帧', force: true })
+    const files = await exportVideoFrames({
+      inputPath: path, outputDirectory: output_directory, fps, startTime: start_time, endTime: end_time,
+    })
+    await progress({ progress: 1, total: 1, message: `已导出 ${files.length} 帧`, force: true })
+    return textResult({ files })
+  },
 )
 
 server.registerTool(
@@ -362,7 +433,9 @@ server.registerTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
-  async ({ report_id, action_index, export_start_frame, export_end_exclusive, output_directory, action_name, end_frame_duplicates_start, ai_confidence, ai_reason }) => {
+  async ({ report_id, action_index, export_start_frame, export_end_exclusive, output_directory, action_name, end_frame_duplicates_start, ai_confidence, ai_reason }, extra) => {
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: 2, message: '验证动作导出边界', force: true })
     const report = await readAnalysisReport(report_id)
     if (report.sourceKind !== 'video') throw new Error('该导出工具当前仅支持视频分析报告')
     const action = report.analysis.actionSegments[action_index]
@@ -381,6 +454,7 @@ server.registerTool(
       startTime: selectedStartFrame / report.fps,
       endTime: export_end_exclusive / report.fps,
     })
+    await progress({ progress: 1, total: 2, message: `已导出 ${files.length} 帧`, force: true })
     const manifest = {
       version: 1,
       reportId: report.id,
@@ -400,6 +474,7 @@ server.registerTool(
     }
     const manifestPath = join(resolve(output_directory), 'frameloop-action.json')
     await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf8')
+    await progress({ progress: 2, total: 2, message: '动作清单已写入', force: true })
     return textResult({ manifestPath, ...manifest })
   },
 )
@@ -417,9 +492,205 @@ server.registerTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   },
-  async ({ frame_paths, output_path, columns, padding }) => textResult(
-    await createSpriteSheetFile({ framePaths: frame_paths, outputPath: output_path, columns, padding }),
+  async ({ frame_paths, output_path, columns, padding }, extra) => {
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: 1, message: '开始合成 Sprite Sheet', force: true })
+    const result = await createSpriteSheetFile({ framePaths: frame_paths, outputPath: output_path, columns, padding })
+    await progress({ progress: 1, total: 1, message: 'Sprite Sheet 已完成', force: true })
+    return textResult(result)
+  },
+)
+
+server.registerTool(
+  'create_action_export_plan',
+  {
+    title: '创建批量动作导出计划',
+    description: '验证多个动作的复核边界、名称、目标冲突、预计文件数和磁盘空间；只写临时计划，不写用户输出目录。',
+    inputSchema: {
+      report_id: z.string().uuid(),
+      output_root: z.string().min(1),
+      reviews: z.array(actionReviewSchema).min(1).max(100),
+      conflict_policy: z.enum(['fail', 'skip', 'replace']).default('fail'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  async ({ report_id, output_root, reviews, conflict_policy }) => {
+    const report = await readAnalysisReport(report_id)
+    const info = await probeVideo(report.videoPath)
+    const plan = await createActionExportPlan({
+      report,
+      outputRoot: output_root,
+      conflictPolicy: conflict_policy,
+      sourceWidth: info.width,
+      sourceHeight: info.height,
+      reviews: reviews.map((review) => ({
+        actionIndex: review.action_index,
+        actionName: review.action_name,
+        exportStartFrame: review.export_start_frame,
+        exportEndExclusive: review.export_end_exclusive,
+        endFrameDuplicatesStart: review.end_frame_duplicates_start,
+        aiConfidence: review.ai_confidence,
+        aiReason: review.ai_reason,
+      })),
+    })
+    return textResult({ ...plan, nextTool: 'export_action_batch' })
+  },
+)
+
+server.registerTool(
+  'export_action_batch',
+  {
+    title: '执行批量动作导出',
+    description: '执行已验证的动作导出计划，逐动作返回成功、跳过或失败结果。计划必须由 create_action_export_plan 创建。',
+    inputSchema: { plan_id: z.string().uuid() },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  async ({ plan_id }, extra) => {
+    const plan = await readActionExportPlan(plan_id)
+    const report = await readAnalysisReport(plan.reportId)
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: plan.items.length, message: '开始批量导出动作', force: true })
+    const result = await executeActionExportPlan(plan, report, {
+      onProgress: (completed, total, message) => progress({
+        progress: completed, total, message, force: completed === total,
+      }),
+    })
+    return textResult(result)
+  },
+)
+
+server.registerTool(
+  'export_sprite_bundle',
+  {
+    title: '导出完整 Sprite Bundle',
+    description: '把一个或多个动画合并为 Atlas，并输出 Tight Trim、Pivot、逐帧时长以及 Generic/Aseprite/Godot/Unity 数据。',
+    inputSchema: {
+      animations: z.array(bundleAnimationSchema).min(1).max(100),
+      output_path: z.string().min(1),
+      preset: z.enum(['generic', 'aseprite', 'godot', 'unity']).default('generic'),
+      trim_mode: z.enum(['grid', 'tight']).default('tight'),
+      columns: z.number().int().min(1).max(100).optional(),
+      padding: z.number().int().min(0).max(128).default(0),
+      alpha_threshold: z.number().int().min(0).max(255).default(1),
+      pivot_x: z.number().min(0).max(1).default(0.5),
+      pivot_y: z.number().min(0).max(1).default(1),
+      pixels_per_unit: z.number().positive().default(100),
+      conflict_policy: z.enum(['fail', 'replace']).default('fail'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  async ({ animations, output_path, preset, trim_mode, columns, padding, alpha_threshold, pivot_x, pivot_y, pixels_per_unit, conflict_policy }, extra) => {
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: 4, message: '准备 Sprite Bundle', force: true })
+    const result = await exportSpriteBundle({
+      animations: animations.map((animation) => ({
+        name: animation.name,
+        framePaths: animation.frame_paths,
+        durations: animation.durations,
+        sourceFrameIds: animation.source_frame_ids,
+      })),
+      outputPath: output_path,
+      preset,
+      trimMode: trim_mode,
+      columns,
+      padding,
+      alphaThreshold: alpha_threshold,
+      pivot: { x: pivot_x, y: pivot_y },
+      pixelsPerUnit: pixels_per_unit,
+      conflictPolicy: conflict_policy,
+      onProgress: (completed, total, message) => progress({
+        progress: completed, total, message, force: completed === total,
+      }),
+    })
+    return textResult({ ...result, nextTool: 'validate_sprite_bundle' })
+  },
+)
+
+server.registerTool(
+  'validate_sprite_bundle',
+  {
+    title: '验证 Sprite Bundle',
+    description: '检查 Atlas 与 Manifest 尺寸、帧坐标、动画范围、配套引擎文件、重复首尾帧、接缝差异和 Alpha 抖动。',
+    inputSchema: {
+      manifest_path: z.string().min(1),
+      duplicate_threshold: z.number().min(0).max(1).default(0.005),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  },
+  async ({ manifest_path, duplicate_threshold }) => textResult(
+    await validateSpriteBundle(manifest_path, duplicate_threshold),
   ),
+)
+
+server.registerTool(
+  'apply_chroma_key_batch',
+  {
+    title: '批量色度键抠图',
+    description: '对图片序列执行任意背景色色度键、三帧 Alpha 时序稳定和边缘去色溢出，输出透明 PNG。',
+    inputSchema: {
+      frame_paths: z.array(z.string().min(1)).min(1).max(2000),
+      output_directory: z.string().min(1),
+      key_color: z.string().regex(/^#[0-9a-f]{6}$/i).default('#00ff00'),
+      tolerance: z.number().min(0).max(441).default(72),
+      feather: z.number().min(1).max(441).default(28),
+      temporal_consistency: z.number().min(0).max(1).default(0.7),
+      despill_strength: z.number().min(0).max(1).default(1),
+      conflict_policy: z.enum(['fail', 'replace']).default('fail'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  async ({ frame_paths, output_directory, key_color, tolerance, feather, temporal_consistency, despill_strength, conflict_policy }, extra) => {
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: frame_paths.length, message: '开始批量色度键', force: true })
+    return textResult(await applyChromaKeyBatch({
+      framePaths: frame_paths,
+      outputDirectory: output_directory,
+      keyColor: key_color,
+      tolerance,
+      feather,
+      temporalConsistency: temporal_consistency,
+      despillStrength: despill_strength,
+      conflictPolicy: conflict_policy,
+      onProgress: (completed, total, message) => progress({
+        progress: completed, total, message, force: completed === total,
+      }),
+    }))
+  },
+)
+
+server.registerTool(
+  'apply_ai_matte_batch',
+  {
+    title: '批量本地 AI 抠图',
+    description: '在 MCP 进程本地使用 Transformers.js 背景移除模型批量生成透明 PNG；首次调用会下载模型。',
+    inputSchema: {
+      frame_paths: z.array(z.string().min(1)).min(1).max(1000),
+      output_directory: z.string().min(1),
+      model: z.string().min(1).default('onnx-community/BEN2-ONNX'),
+      conflict_policy: z.enum(['fail', 'replace']).default('fail'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  async ({ frame_paths, output_directory, model, conflict_policy }, extra) => {
+    const progress = createProgressReporter(extra)
+    const total = 100 + frame_paths.length
+    await progress({ progress: 0, total, message: '准备加载 AI 抠图模型', force: true })
+    return textResult(await applyAiMatteBatch({
+      framePaths: frame_paths,
+      outputDirectory: output_directory,
+      model,
+      conflictPolicy: conflict_policy,
+      onModelProgress: (message, ratio) => ratio === undefined
+        ? undefined
+        : progress({ progress: Math.min(100, Math.max(0.01, ratio * 100)), total, message }),
+      onProgress: (completed, frameTotal, message) => progress({
+        progress: 100 + completed,
+        total,
+        message,
+        force: completed === frameTotal,
+      }),
+    }))
+  },
 )
 
 const transport = new StdioServerTransport()

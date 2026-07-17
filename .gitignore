@@ -9,3 +9,4 @@ tmp/
 outputs/
 artifacts/action-export-test/
 artifacts/action-review-*/
+artifacts/video-action-experiment-*/
