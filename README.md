@@ -28,6 +28,7 @@ FrameLoop Studio 会分析周期、自相似、首尾闭合、运动能量、运
 - **可视化精修**：差异曲线、重复帧/镜头切换标记、A/B 接缝对比、缩放时间线及完整撤销/重做。
 - **抠图与修边**：任意色度键、Alpha 羽化、三帧时序稳定，以及独立的线性光前景色恢复 / 边缘去色溢出；调 Alpha 时不再靠侵蚀主体来消除彩边。
 - **浏览器本地 AI 抠图**：按需加载 BEN2 置信度引导 Matting，优先 WebGPU，失败时自动回退 WASM。
+- **逐帧像素精修**：自动抠图后可按帧放大到 1600%，使用最小 1 像素的“移除背景 / 恢复主体”笔刷修补蒙版，并支持前后帧切换、撤销重做和复制到相邻帧。
 - **专业 Sprite Sheet**：支持规则网格和 Tight Trim 紧凑排布、透明边界裁切、Pivot、逐帧时长与动画命名。
 - **引擎友好导出**：PNG 配套 Generic、Aseprite、Godot 和 Unity 数据预设。
 - **项目恢复**：视频、帧编辑、循环区间、抠图蒙版和导出设置均可保存到 IndexedDB。
@@ -103,6 +104,8 @@ codex mcp add frameloop -- node apps/mcp/dist/index.js
 | `validate_sprite_bundle` | 检查 Atlas、Manifest、引擎配套文件、重复末帧、接缝与 Alpha 抖动 | 否 |
 | `apply_chroma_key_batch` | 批量色度键、三帧时序稳定与边缘去色溢出 | 是 |
 | `apply_ai_matte_batch` | 使用本地 BEN2/Transformers.js 批量生成透明 PNG | 是 |
+| `analyze_matte_quality` | 诊断孤立背景残点、主体孔洞和半透明边缘，返回逐帧坐标 | 否 |
+| `refine_matte_batch` | 按 AI 笔画逐帧移除或恢复像素，并可自动清理小面积缺陷 | 是 |
 
 长视频分析、图片序列分析、帧导出、Sprite 合成和批量抠图均支持 MCP 标准进度通知；客户端提供 `progressToken` 后即可显示持续进度。批量导出采用“先计划、后执行”两阶段设计：计划阶段不会写用户输出目录，执行前可以检查所有动作边界、文件冲突和预计磁盘占用。
 
@@ -112,7 +115,8 @@ codex mcp add frameloop -- node apps/mcp/dist/index.js
 2. AI 分页调用 `review_video_action_segments`，同时观察全段动作概览和候选接缝前后三帧。
 3. AI 返回动作名称、最早有效结束帧、末帧是否重复首帧和 `export_end_exclusive`。
 4. 单个动作可调用 `export_reviewed_action`；多个动作先调用 `create_action_export_plan`，确认计划后再调用 `export_action_batch`。
-5. 需要透明背景时调用 `apply_chroma_key_batch` 或 `apply_ai_matte_batch`，最后使用 `export_sprite_bundle` 合并多动画 Atlas，并用 `validate_sprite_bundle` 做闭环校验。
+5. 需要透明背景时调用 `apply_chroma_key_batch` 或 `apply_ai_matte_batch`，再用 `analyze_matte_quality` 定位背景残点和主体孔洞。
+6. AI 根据诊断坐标调用 `refine_matte_batch` 精确移除或恢复像素；自动清理默认关闭，需明确设置面积阈值才会启用。精修后再次诊断，确认无误再使用 `export_sprite_bundle` 合并多动画 Atlas，并用 `validate_sprite_bundle` 做闭环校验。
 
 ## 循环评分是怎样工作的
 
@@ -143,7 +147,7 @@ packages/core  循环检测与 Sprite 布局算法
 
 ## 当前边界与路线图
 
-- 浏览器端会先用低分辨率特征流扫描完整视频，再只加载最佳循环候选的原始帧进入时间线；“分析窗口”控制单次计算量，不会截断视频。
+- 浏览器端会先用低分辨率特征流扫描完整视频，再只加载最佳循环候选的原始帧进入时间线；用户设置“最短循环”和“最长循环”，内部扫描窗口会自动扩大并重叠，不会截断视频或漏掉跨窗口的有效循环。
 - MCP 端直接消费 FFmpeg 原始像素流并使用重叠窗口，内存占用与视频总长度解耦；完整窗口结果写入临时报告，可由 `read_analysis_report` 分页读取。
 - 动作分段使用局部突变而不是传统全画面固定阈值；候选同时覆盖段首闭环和段内周期核心，既支持直接起跑的规范循环，也支持带入场 / 收势的动作段。
 - AI 复核图包含全段八帧概览和 `END-2 / END-1 / END / START / START+1 / START+2` 六帧接缝，可区分主体完整动作与火焰、衣摆等局部微循环。

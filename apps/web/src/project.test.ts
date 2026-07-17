@@ -5,7 +5,7 @@ const snapshot: ProjectSnapshot = {
   schemaVersion: PROJECT_SCHEMA_VERSION,
   savedAt: '2026-07-15T12:00:00.000Z',
   source: { kind: 'demo', period: 8, repeats: 3 },
-  capture: { fps: 12, analysisWindowSeconds: 20, minLoopFrames: 6 },
+  capture: { fps: 12, maxLoopSeconds: 20, minLoopFrames: 6 },
   editor: { order: [0, 1, 2], hidden: [], selected: [] },
   loop: { startFrame: 0, endFrame: 2 },
   matte: {
@@ -25,6 +25,13 @@ describe('project snapshot schema', () => {
     expect(isProjectSnapshot({
       ...snapshot,
       capture: { fps: 12, maxFrames: 144, minLoopFrames: 6 },
+    })).toBe(true)
+  })
+
+  it('accepts the legacy analysis window as a longest-loop migration value', () => {
+    expect(isProjectSnapshot({
+      ...snapshot,
+      capture: { fps: 12, analysisWindowSeconds: 20, minLoopFrames: 6 },
     })).toBe(true)
   })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createMaskEditorState, maskEditorReducer, pointInContainedImage, type MaskStroke } from './mask'
+import { createMaskEditorState, maskEditorReducer, maskStrokeDiameterPixels, pointInContainedImage, type MaskStroke } from './mask'
 
 const stroke: MaskStroke = {
   mode: 'remove',
@@ -15,6 +15,11 @@ describe('maskEditorReducer', () => {
     })
     expect(state.present[3]![0]!.points).toEqual([{ x: 0, y: 1 }])
     expect(state.past).toEqual([])
+  })
+
+  it('keeps legacy relative brushes while supporting source-pixel brush sizes', () => {
+    expect(maskStrokeDiameterPixels(stroke, 200, 100)).toBe(24)
+    expect(maskStrokeDiameterPixels({ ...stroke, size: 1, sizeUnit: 'pixel' }, 2000, 1000)).toBe(1)
   })
 
   it('commits normalized strokes and supports undo/redo', () => {

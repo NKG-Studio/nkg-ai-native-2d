@@ -42,7 +42,6 @@ import {
   BrowserMatteEngine,
   createTransformersMattePipeline,
   DEFAULT_MATTE_MODEL,
-  DEFAULT_MATTE_MODEL_LICENSE,
   type MatteBackend,
   type MatteLoadProgress,
 } from './segmentation'
@@ -70,9 +69,12 @@ interface AiMatteJob {
   message: string
 }
 
-const formatTime = (seconds: number) => `${seconds.toFixed(2)}s`
+const formatTime = (seconds: number) => `${seconds.toFixed(2)} 秒`
 const percent = (value: number) => `${Math.round(value * 100)}%`
-const safeFilename = (value: string) => value.trim().replace(/[^a-zA-Z0-9_-]+/g, '-') || 'animation'
+const safeFilename = (value: string) => value.trim().replace(/[^\p{L}\p{N}_-]+/gu, '-') || '动画'
+const matteBackendLabel = (backend: MatteBackend | null) => backend === 'webgpu'
+  ? '显卡加速'
+  : backend === 'wasm' ? '兼容模式' : '尚未加载'
 const loopKey = (candidate: LoopCandidate) => `${candidate.startFrame}:${candidate.endFrame}`
 
 export default function App() {
@@ -81,7 +83,7 @@ export default function App() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [fps, setFps] = useState(12)
-  const [analysisWindowSeconds, setAnalysisWindowSeconds] = useState(20)
+  const [maxLoopSeconds, setMaxLoopSeconds] = useState(20)
   const [minLoopFrames, setMinLoopFrames] = useState(8)
   const [frames, setFrames] = useState<CapturedFrame[]>([])
   const [detectedLoops, setDetectedLoops] = useState<LoopCandidate[]>([])
@@ -107,7 +109,8 @@ export default function App() {
   const [alphaDiagnostics, setAlphaDiagnostics] = useState<AlphaFlickerDiagnostics | null>(null)
   const [maskEditing, setMaskEditing] = useState(false)
   const [brushMode, setBrushMode] = useState<MaskBrushMode>('remove')
-  const [brushSize, setBrushSize] = useState(24)
+  const [brushSize, setBrushSize] = useState(8)
+  const [maskZoom, setMaskZoom] = useState(2)
   const [activeMaskStroke, setActiveMaskStroke] = useState<ActiveMaskStroke | null>(null)
   const [autoMattes, setAutoMattes] = useState<Record<number, HTMLCanvasElement>>({})
   const [matteBackend, setMatteBackend] = useState<MatteBackend | null>(null)
@@ -120,7 +123,7 @@ export default function App() {
   const [alphaThreshold, setAlphaThreshold] = useState(1)
   const [pivotX, setPivotX] = useState(0.5)
   const [pivotY, setPivotY] = useState(1)
-  const [animationName, setAnimationName] = useState('idle')
+  const [animationName, setAnimationName] = useState('待机')
   const [defaultFrameDuration, setDefaultFrameDuration] = useState(83)
   const [durationOverrides, setDurationOverrides] = useState<Record<number, number>>({})
   const [exportPreset, setExportPreset] = useState<ExportPreset>('generic')
@@ -231,6 +234,12 @@ export default function App() {
   }, [playing, selectedFrames.length, fps])
 
   useEffect(() => {
+    setPreviewIndex((current) => selectedFrames.length === 0
+      ? 0
+      : Math.min(current, selectedFrames.length - 1))
+  }, [selectedFrames.length])
+
+  useEffect(() => {
     const source = previewFrame?.canvas
     const target = previewCanvasRef.current
     if (!source || !target) return
@@ -309,7 +318,7 @@ export default function App() {
   const acceptVideoFile = (nextFile: File | null) => {
     if (!nextFile) return
     if (!isSupportedVideoFile(nextFile)) {
-      setError('仅支持 MP4、MOV 或 WEBM 视频文件')
+      setError('仅支持常见的视频文件格式')
       return
     }
     pickFile(nextFile)
@@ -351,7 +360,7 @@ export default function App() {
     const controller = new AbortController()
     captureAbortRef.current = controller
     try {
-      const result = await captureVideoFrames(file, fps, minLoopFrames, analysisWindowSeconds, setProgress, controller.signal)
+      const result = await captureVideoFrames(file, fps, minLoopFrames, maxLoopSeconds, setProgress, controller.signal)
       setDetectedLoops(result.scan.candidates)
       setActiveDetectedLoopKey(result.scan.selectedCandidate ? loopKey(result.scan.selectedCandidate) : null)
       acceptFrames(result.frames)
@@ -436,6 +445,7 @@ export default function App() {
     setStartFrame(candidate.startFrame)
     setEndFrame(candidate.endFrame)
     setPreviewIndex(0)
+    setPlaying(true)
   }
 
   const assignCompareSlot = (slot: 0 | 1, candidateIndex: number) => {
@@ -554,6 +564,7 @@ export default function App() {
       frameId: previewFrame.index,
       mode: brushMode,
       size: brushSize,
+      sizeUnit: 'pixel',
       points: [point],
     }
     activeMaskStrokeRef.current = stroke
@@ -580,6 +591,16 @@ export default function App() {
     setActiveMaskStroke(null)
   }
 
+  const toggleMaskEditing = () => {
+    setMaskEditing((current) => {
+      if (!current) {
+        setPlaying(false)
+        setMaskZoom((zoom) => Math.max(2, zoom))
+      }
+      return !current
+    })
+  }
+
   const copyMaskToNeighbors = () => {
     if (!previewFrame) return
     const targets = [selectedFrames[previewIndex - 1], selectedFrames[previewIndex + 1]]
@@ -596,13 +617,13 @@ export default function App() {
       ...current,
       phase: 'loading',
       percent: Math.max(current.percent, Math.min(1, ratio)),
-      message: progress.file ? `加载 ${progress.file}` : '正在加载本地推理模型',
+      message: '正在加载本地推理模型',
     }))
   }
 
   const ensureMatteEngine = async () => {
     if (matteEngineRef.current) return matteEngineRef.current
-    setAiMatteJob({ phase: 'loading', current: 0, total: 0, percent: 0, message: '正在选择 WebGPU / WASM 后端' })
+    setAiMatteJob({ phase: 'loading', current: 0, total: 0, percent: 0, message: '正在选择显卡加速或兼容模式' })
     const engine = await BrowserMatteEngine.create({
       factory: createTransformersMattePipeline,
       preferWebGpu: true,
@@ -643,12 +664,11 @@ export default function App() {
       setMatteMode('ai')
       setAiMatteJob({
         phase: 'ready', current: targets.length, total: targets.length, percent: 1,
-        message: `已用 ${engine.backend.toUpperCase()} 完成 ${targets.length} 帧`,
+        message: `已用${matteBackendLabel(engine.backend)}完成 ${targets.length} 帧`,
       })
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : String(cause)
-      setAiMatteJob({ phase: 'error', current: 0, total: targets.length, percent: 0, message })
-      setError(`自动抠图失败：${message}`)
+      setAiMatteJob({ phase: 'error', current: 0, total: targets.length, percent: 0, message: '自动抠图失败，请检查浏览器兼容性后重试' })
+      setError('自动抠图失败，请检查浏览器兼容性后重试')
     }
   }
 
@@ -685,7 +705,7 @@ export default function App() {
         schemaVersion: PROJECT_SCHEMA_VERSION,
         savedAt: new Date().toISOString(),
         source,
-        capture: { fps, analysisWindowSeconds, minLoopFrames },
+        capture: { fps, maxLoopSeconds, minLoopFrames },
         editor: {
           order: [...editorState.present.order],
           hidden: [...editorState.present.hidden],
@@ -738,9 +758,10 @@ export default function App() {
       const project = await loadLatestProject()
       if (!project) throw new Error('没有找到本地项目')
       setFps(project.capture.fps)
-      const restoredWindowSeconds = project.capture.analysisWindowSeconds
+      const restoredMaxLoopSeconds = project.capture.maxLoopSeconds
+        ?? project.capture.analysisWindowSeconds
         ?? Math.max(1, (project.capture.maxFrames ?? 240) / project.capture.fps)
-      setAnalysisWindowSeconds(restoredWindowSeconds)
+      setMaxLoopSeconds(restoredMaxLoopSeconds)
       setMinLoopFrames(project.capture.minLoopFrames)
 
       let nextFrames: CapturedFrame[]
@@ -759,7 +780,7 @@ export default function App() {
           nextFile,
           project.capture.fps,
           project.capture.minLoopFrames,
-          restoredWindowSeconds,
+          restoredMaxLoopSeconds,
           ({ phase, current, total }) => {
             setProgress({ phase, current, total })
             setProjectMessage(`${phase === 'capturing' ? '正在载入候选原始帧' : '正在流式重扫完整视频'} ${current} / ${total}`)
@@ -798,7 +819,7 @@ export default function App() {
       setAlphaThreshold(project.sprite.alphaThreshold ?? 1)
       setPivotX(project.sprite.pivotX ?? 0.5)
       setPivotY(project.sprite.pivotY ?? 1)
-      setAnimationName(project.sprite.animationName ?? 'idle')
+      setAnimationName(project.sprite.animationName ?? '待机')
       setDefaultFrameDuration(project.sprite.defaultFrameDuration ?? Math.round(1000 / project.capture.fps))
       setDurationOverrides(project.sprite.durationOverrides ?? {})
       setExportPreset(project.sprite.exportPreset ?? 'generic')
@@ -840,9 +861,9 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="FrameLoop Studio 首页">
-          <span className="brand-mark">FL</span>
-          <span>FrameLoop <em>Studio</em></span>
+        <a className="brand" href="#top" aria-label="帧环工坊首页">
+          <span className="brand-mark">帧</span>
+          <span>帧环<em>工坊</em></span>
         </a>
         <div className="topbar-actions">
           <div className="project-controls" aria-label="本地项目">
@@ -852,7 +873,7 @@ export default function App() {
           </div>
           <div className="topbar-meta">
             <span className="status-dot" /> 本地处理 · 素材不上传
-            <span className="version">ALPHA 0.2</span>
+            <span className="version">测试版 0.2</span>
           </div>
         </div>
       </header>
@@ -860,9 +881,9 @@ export default function App() {
       <main id="top">
         <section className="hero">
           <div>
-            <p className="eyebrow">AI-NATIVE 2D ASSET PIPELINE</p>
+            <p className="eyebrow">智能原生二维素材工作流</p>
             <h1>让动画自己找到<br /><span>完美循环。</span></h1>
-            <p className="hero-copy">从视频抽帧、接缝分析、抠图到 Sprite Sheet。算法给出候选，创作者保留最后决定权。</p>
+            <p className="hero-copy">从视频抽帧、接缝分析、抠图到精灵图。算法给出候选，创作者保留最后决定权。</p>
           </div>
           <div className="hero-visual" aria-hidden="true">
             <div className="orbit orbit-a" />
@@ -893,7 +914,7 @@ export default function App() {
         {stage === 'source' && (
           <section className="workspace source-grid">
             <div className="panel upload-panel">
-              <div className="panel-heading"><span>INPUT / SOURCE</span><small>MP4 · MOV · WEBM</small></div>
+              <div className="panel-heading"><span>视频来源</span><small>常见视频格式</small></div>
               <label
                 className={`drop-zone ${dragActive ? 'drag-active' : ''}`}
                 onDragEnter={handleDragEnter}
@@ -919,18 +940,43 @@ export default function App() {
                   </>
                 )}
               </label>
-              {file && <p className="file-line"><span>{file.name}</span><span>{(file.size / 1024 / 1024).toFixed(1)} MB</span></p>}
+              {file && <p className="file-line"><span>{file.name}</span><span>{(file.size / 1024 / 1024).toFixed(1)} 兆字节</span></p>}
             </div>
             <div className="panel settings-panel">
-              <div className="panel-heading"><span>CAPTURE / SAMPLE</span><small>BROWSER CANVAS</small></div>
-              <Control label="采样帧率" value={`${fps} FPS`}>
+              <div className="panel-heading"><span>抽帧与扫描</span><small>浏览器本地处理</small></div>
+              <div className="settings-guide">
+                <strong>第一次用？保持默认值即可</strong>
+                <p>这三个参数只影响扫描精度和速度，不会修改你的原视频。</p>
+              </div>
+              <Control
+                label="采样帧率"
+                value={`${fps} 帧/秒`}
+                description="每秒读取多少张画面。数值越高，动作越顺滑，但扫描更慢、导出的帧也更多。一般二维动作用 12 帧/秒。"
+              >
                 <input type="number" min="0.01" step="1" value={fps} onChange={(event) => setFps(Math.max(0.01, Number(event.target.value) || 0.01))} />
               </Control>
-              <Control label="分析窗口" value={`${analysisWindowSeconds}s · 不截断视频`}>
-                <input type="number" min="0.1" step="1" value={analysisWindowSeconds} onChange={(event) => setAnalysisWindowSeconds(Math.max(0.1, Number(event.target.value) || 0.1))} />
-              </Control>
-              <Control label="最短循环" value={`${minLoopFrames} 帧`}>
+              <Control
+                label="最短循环"
+                value={`${minLoopFrames} 帧 · 约 ${(minLoopFrames / Math.max(0.01, fps)).toFixed(2)} 秒`}
+                description="少于这个帧数的重复片段会被忽略，可避免把短暂抖动误判成动作循环。通常保持 8 帧即可。"
+              >
                 <input type="number" min="2" step="1" value={minLoopFrames} onChange={(event) => setMinLoopFrames(Math.max(2, Math.floor(Number(event.target.value) || 2)))} />
+              </Control>
+              <Control
+                label="最长循环"
+                value={`${maxLoopSeconds} 秒`}
+                description="超过这个时长的片段不会被当作单次循环。完整视频仍会全部扫描；只有动作本身很长时才需要调大。"
+              >
+                <input
+                  type="number"
+                  min={Math.max(0.1, minLoopFrames / Math.max(0.01, fps))}
+                  step="1"
+                  value={maxLoopSeconds}
+                  onChange={(event) => setMaxLoopSeconds(Math.max(
+                    minLoopFrames / Math.max(0.01, fps),
+                    Number(event.target.value) || 0.1,
+                  ))}
+                />
               </Control>
               <button className="primary-action" disabled={!file || extracting} onClick={extract}>
                 {extracting ? `正在${progress.phase === 'capturing' ? '载入候选帧' : '流式扫描'} ${progress.current}/${progress.total}` : '扫描完整视频并分析循环 →'}
@@ -945,12 +991,12 @@ export default function App() {
         {stage === 'loop' && editedFrames.length > 0 && (
           <section className="workspace analysis-grid">
             <div className="panel timeline-panel">
-              <div className="panel-heading"><span>LOOP / TIMELINE</span><small>{editedFrames.length} VISIBLE · {editorState.present.hidden.length} HIDDEN</small></div>
+              <div className="panel-heading"><span>循环与时间线</span><small>{editedFrames.length} 帧可见 · {editorState.present.hidden.length} 帧已隐藏</small></div>
               {detectedLoops.length > 0 && (
                 <div className="detected-loop-picker">
                   <div className="detected-loop-heading">
                     <span>识别出的全部循环</span>
-                    <small>{loadingDetectedLoop ? `LOADING ${progress.current}/${progress.total}` : `${detectedLoops.length} DETECTED · CHOOSE ONE TO EDIT`}</small>
+                    <small>{loadingDetectedLoop ? `正在载入 ${progress.current}/${progress.total}` : `识别到 ${detectedLoops.length} 个 · 请选择一个进行编辑`}</small>
                   </div>
                   <div className="detected-loop-list" role="group" aria-label="识别出的动画循环">
                     {detectedLoops.map((candidate, index) => {
@@ -967,7 +1013,7 @@ export default function App() {
                           <b>{String(index + 1).padStart(2, '0')}</b>
                           <span>
                             <strong>{formatTime(candidate.startFrame / fps)} — {formatTime(candidate.endFrame / fps)}</strong>
-                            <small>SRC {candidate.startFrame + 1} → {candidate.endFrame + 1} · {candidate.frameCount} 帧</small>
+                            <small>源帧 {candidate.startFrame + 1} → {candidate.endFrame + 1} · {candidate.frameCount} 帧</small>
                           </span>
                           <output>{percent(candidate.confidence)}</output>
                         </button>
@@ -998,7 +1044,7 @@ export default function App() {
                 <button disabled={editorState.past.length === 0} onClick={() => dispatchEditor({ type: 'undo' })}>撤销</button>
                 <button disabled={editorState.future.length === 0} onClick={() => dispatchEditor({ type: 'redo' })}>重做</button>
                 <button disabled={editorState.present.hidden.length === 0} onClick={() => dispatchEditor({ type: 'restore_all' })}>恢复隐藏 ({editorState.present.hidden.length})</button>
-                <span className="edit-shortcuts">⌘/Ctrl+Z · Del · Esc</span>
+                <span className="edit-shortcuts">快捷键：撤销 · 删除 · 取消</span>
               </div>
               <div className="filmstrip" style={{ '--timeline-zoom': timelineZoom } as React.CSSProperties}>
                 {editedFrames.map((frame, position) => {
@@ -1028,7 +1074,7 @@ export default function App() {
                       onClick={() => position < startFrame ? setStartFrame(position) : setEndFrame(position)}
                     >
                       <img src={frame.previewUrl} alt={`序列第 ${position + 1} 帧，源帧 ${frame.index + 1}`} />
-                      <span>{String(position + 1).padStart(3, '0')} <small>SRC {String(frame.index + 1).padStart(3, '0')}</small> {transition?.isDuplicate ? 'DUP' : ''}</span>
+                      <span>{String(position + 1).padStart(3, '0')} <small>源 {String(frame.index + 1).padStart(3, '0')}</small> {transition?.isDuplicate ? '重复' : ''}</span>
                     </button>
                   </div>
                   )
@@ -1054,7 +1100,39 @@ export default function App() {
             </div>
 
             <div className="panel candidate-panel">
-              <div className="panel-heading"><span>AI / CANDIDATES</span><small>LOWER SEAM SCORE IS BETTER</small></div>
+              <div className="panel-heading"><span>智能候选</span><small>接缝分数越低越好</small></div>
+              <div className="candidate-loop-preview">
+                <div className="candidate-preview-heading">
+                  <strong>当前区间循环预览</strong>
+                  <small>
+                    {startFrame + 1} → {endFrame + 1} · {selectedFrames.length} 帧
+                    {previewFrame ? ` · ${previewFrame.canvas.width}×${previewFrame.canvas.height}` : ''}
+                  </small>
+                </div>
+                <div className="candidate-preview-stage checkerboard">
+                  {previewFrame
+                    ? <img src={previewFrame.previewUrl} alt={`当前循环第 ${previewIndex + 1} 帧`} />
+                    : <span>暂无可预览帧</span>}
+                </div>
+                <div className="transport candidate-preview-transport">
+                  <button
+                    aria-label={playing ? '暂停循环预览' : '播放循环预览'}
+                    title={playing ? '暂停循环预览' : '播放循环预览'}
+                    onClick={() => setPlaying((value) => !value)}
+                  >
+                    {playing ? 'Ⅱ' : '▶'}
+                  </button>
+                  <span>{previewIndex + 1} / {selectedFrames.length}</span>
+                  <input
+                    aria-label="选择循环预览帧"
+                    type="range"
+                    min="0"
+                    max={Math.max(0, selectedFrames.length - 1)}
+                    value={previewIndex}
+                    onChange={(event) => { setPreviewIndex(Number(event.target.value)); setPlaying(false) }}
+                  />
+                </div>
+              </div>
               <div className="candidate-list">
                 {candidates.map((candidate, index) => (
                   <div key={`${candidate.startFrame}-${candidate.endFrame}`} className={`candidate-row ${candidate === activeCandidate ? 'active' : ''}`}>
@@ -1064,8 +1142,8 @@ export default function App() {
                       <b>{percent(candidate.confidence)}</b>
                     </button>
                     <div className="compare-actions">
-                      <button className={compareSlots[0] === index ? 'selected' : ''} onClick={() => assignCompareSlot(0, index)}>A</button>
-                      <button className={compareSlots[1] === index ? 'selected' : ''} onClick={() => assignCompareSlot(1, index)}>B</button>
+                      <button className={compareSlots[0] === index ? 'selected' : ''} onClick={() => assignCompareSlot(0, index)}>一</button>
+                      <button className={compareSlots[1] === index ? 'selected' : ''} onClick={() => assignCompareSlot(1, index)}>二</button>
                     </div>
                     {candidate.suggestsDropLastFrame && <span className="candidate-warning">重复末帧</span>}
                   </div>
@@ -1079,38 +1157,49 @@ export default function App() {
         {(stage === 'matte' || stage === 'export') && frames.length > 0 && (
           <section className="workspace finish-grid">
             <div className="panel preview-panel">
-              <div className="panel-heading"><span>LOOP / PREVIEW</span><small>{previewFrame ? `${previewFrame.canvas.width}×${previewFrame.canvas.height} · ` : ''}{selectedFrames.length} FRAMES · {fps} FPS</small></div>
+              <div className="panel-heading"><span>循环预览</span><small>{previewFrame ? `${previewFrame.canvas.width}×${previewFrame.canvas.height} · ` : ''}{selectedFrames.length} 帧 · {fps} 帧/秒</small></div>
               <div className={`checkerboard ${maskEditing ? 'mask-editing' : ''}`}>
-                <canvas
-                  ref={previewCanvasRef}
-                  aria-label="循环与蒙版预览"
-                  onPointerDown={beginMaskStroke}
-                  onPointerMove={extendMaskStroke}
-                  onPointerUp={finishMaskStroke}
-                  onPointerCancel={finishMaskStroke}
-                />
+                <div
+                  className="mask-canvas-surface"
+                  style={maskEditing ? { width: `${maskZoom * 100}%` } : undefined}
+                >
+                  <canvas
+                    ref={previewCanvasRef}
+                    aria-label="循环与蒙版预览"
+                    onPointerDown={beginMaskStroke}
+                    onPointerMove={extendMaskStroke}
+                    onPointerUp={finishMaskStroke}
+                    onPointerCancel={finishMaskStroke}
+                  />
+                </div>
               </div>
               <div className="transport">
-                <button onClick={() => setPlaying((value) => !value)}>{playing ? 'Ⅱ' : '▶'}</button>
+                <button
+                  aria-label={playing ? '暂停循环预览' : '播放循环预览'}
+                  title={playing ? '暂停循环预览' : '播放循环预览'}
+                  onClick={() => setPlaying((value) => !value)}
+                >
+                  {playing ? 'Ⅱ' : '▶'}
+                </button>
                 <span>{previewIndex + 1} / {selectedFrames.length}</span>
-                <input type="range" min="0" max={Math.max(0, selectedFrames.length - 1)} value={previewIndex} onChange={(event) => { setPreviewIndex(Number(event.target.value)); setPlaying(false) }} />
+                <input aria-label="选择循环预览帧" type="range" min="0" max={Math.max(0, selectedFrames.length - 1)} value={previewIndex} onChange={(event) => { setPreviewIndex(Number(event.target.value)); setPlaying(false) }} />
               </div>
             </div>
             <div className="panel settings-panel">
-              <div className="panel-heading"><span>{stage === 'matte' ? 'MATTE / AI + CHROMA' : 'EXPORT / SPRITE SHEET'}</span><small>NON-DESTRUCTIVE</small></div>
+              <div className="panel-heading"><span>{stage === 'matte' ? '抠图与背景移除' : '精灵图导出'}</span><small>不修改原素材</small></div>
               {stage === 'matte' ? (
                 <>
                   <div className="matte-mode-tabs" role="group" aria-label="基础抠图模式">
                     <button className={matteMode === 'original' ? 'active' : ''} onClick={() => setMatteMode('original')}>原图</button>
-                    <button className={matteMode === 'ai' ? 'active' : ''} disabled={selectedAutoMatteCount === 0} onClick={() => setMatteMode('ai')}>AI 蒙版 {selectedAutoMatteCount}/{selectedFrames.length}</button>
+                    <button className={matteMode === 'ai' ? 'active' : ''} disabled={selectedAutoMatteCount === 0} onClick={() => setMatteMode('ai')}>自动蒙版 {selectedAutoMatteCount}/{selectedFrames.length}</button>
                     <button className={matteMode === 'chroma' ? 'active' : ''} onClick={() => setMatteMode('chroma')}>色度键</button>
                   </div>
                   <div className="ai-matte-card">
                     <div className="ai-matte-heading">
-                      <span>LOCAL AI / BEN2</span>
-                      <small>{matteBackend?.toUpperCase() ?? 'NOT LOADED'}</small>
+                      <span>本地智能抠图</span>
+                      <small>{matteBackendLabel(matteBackend)}</small>
                     </div>
-                    <p>{DEFAULT_MATTE_MODEL} · {DEFAULT_MATTE_MODEL_LICENSE} · 模型首次使用时下载，推理素材不上传。</p>
+                    <p>模型首次使用时下载，所有推理均在本地完成，素材不会上传。</p>
                     <div className="ai-matte-actions">
                       <button disabled={!previewFrame || mattingBusy} onClick={() => previewFrame && void runAutomaticMatting([previewFrame])}>自动抠图当前帧</button>
                       <button disabled={mattingBusy} onClick={() => void runAutomaticMatting(selectedFrames)}>批量处理循环 ({selectedFrames.length})</button>
@@ -1125,11 +1214,11 @@ export default function App() {
                       <b>{Math.round(aiMatteJob.percent * 100)}%</b>
                       <i style={{ width: `${aiMatteJob.percent * 100}%` }} />
                     </div>
-                    {matteEngineRef.current?.fallbackReason && <p className="backend-fallback">{matteEngineRef.current.fallbackReason}，已自动切换 WASM。</p>}
+                    {matteEngineRef.current?.fallbackReason && <p className="backend-fallback">显卡加速不可用，已自动切换到兼容模式。</p>}
                     {matteMode === 'ai' && previewFrame && !autoMattes[previewFrame.index] && <p className="backend-fallback">当前帧还没有自动蒙版，预览暂时显示原图。</p>}
                   </div>
                   <div className={`chroma-controls ${matteMode === 'chroma' ? 'active' : ''}`}>
-                    <div className="subsection-heading"><span>CHROMA / ALPHA + DESPILL</span><small>{matteMode === 'chroma' ? 'ACTIVE' : 'INACTIVE'}</small></div>
+                    <div className="subsection-heading"><span>色度键、透明度与去溢色</span><small>{matteMode === 'chroma' ? '已启用' : '未启用'}</small></div>
                     <Control label="背景色" value={keyColor.toUpperCase()}>
                       <input className="color-input" type="color" value={keyColor} onChange={(event) => setKeyColor(event.target.value)} />
                     </Control>
@@ -1146,17 +1235,29 @@ export default function App() {
                   <div className="mask-tools">
                     <div className="mask-tools-heading">
                       <span>逐帧蒙版修正</span>
-                      <small>当前帧 {currentMaskStrokes.length} 笔</small>
+                      <small>第 {previewIndex + 1} 帧 · 已修正 {currentMaskStrokes.length} 笔</small>
                     </div>
-                    <button className={maskEditing ? 'active' : ''} onClick={() => setMaskEditing((value) => !value)}>
+                    <button className={maskEditing ? 'active' : ''} onClick={toggleMaskEditing}>
                       {maskEditing ? '结束笔刷编辑' : '开始笔刷编辑'}
                     </button>
+                    <div className="frame-step-actions">
+                      <button disabled={previewIndex <= 0} onClick={() => { setPreviewIndex((index) => Math.max(0, index - 1)); setPlaying(false) }}>← 上一帧</button>
+                      <button disabled={previewIndex >= selectedFrames.length - 1} onClick={() => { setPreviewIndex((index) => Math.min(selectedFrames.length - 1, index + 1)); setPlaying(false) }}>下一帧 →</button>
+                    </div>
                     <div className="brush-modes" role="group" aria-label="蒙版笔刷模式">
                       <button className={brushMode === 'remove' ? 'active' : ''} onClick={() => setBrushMode('remove')}>移除背景</button>
                       <button className={brushMode === 'restore' ? 'active' : ''} onClick={() => setBrushMode('restore')}>恢复主体</button>
                     </div>
-                    <Control label="笔刷大小" value={String(brushSize)}>
-                      <input type="range" min="4" max="80" value={brushSize} onChange={(event) => setBrushSize(Number(event.target.value))} />
+                    <Control label="编辑缩放" value={`${Math.round(maskZoom * 100)}%`}>
+                      <input type="range" min="1" max="16" step="0.25" value={maskZoom} onChange={(event) => setMaskZoom(Number(event.target.value))} />
+                    </Control>
+                    <div className="precision-zoom-presets">
+                      <button className={maskZoom === 1 ? 'active' : ''} onClick={() => setMaskZoom(1)}>适合窗口</button>
+                      <button className={maskZoom === 4 ? 'active' : ''} onClick={() => setMaskZoom(4)}>放大 4 倍</button>
+                      <button className={maskZoom === 8 ? 'active' : ''} onClick={() => setMaskZoom(8)}>放大 8 倍</button>
+                    </div>
+                    <Control label="笔刷直径" value={`${brushSize} 像素`}>
+                      <input type="range" min="1" max="64" step="1" value={brushSize} onChange={(event) => setBrushSize(Number(event.target.value))} />
                     </Control>
                     <div className="mask-history-actions">
                       <button disabled={maskState.past.length === 0} onClick={() => dispatchMask({ type: 'undo' })}>撤销笔刷</button>
@@ -1164,15 +1265,15 @@ export default function App() {
                       <button disabled={currentMaskStrokes.length === 0} onClick={copyMaskToNeighbors}>复制到相邻帧</button>
                       <button disabled={currentMaskStrokes.length === 0} onClick={() => previewFrame && dispatchMask({ type: 'clear_frame', frameId: previewFrame.index })}>清空当前帧</button>
                     </div>
-                    <p>笔刷坐标按画面比例保存，可安全用于不同预览尺寸；所有修改在浏览器内完成。</p>
+                    <p>放大后可用滚动条移动画面；笔刷按源图像素计算，最小可精修 1 像素。修正默认只作用于当前帧。</p>
                   </div>
-                  <button className="secondary-action" disabled={matteMode !== 'chroma'} onClick={analyzeMatteStability}>分析色度键 Alpha 抖动</button>
+                  <button className="secondary-action" disabled={matteMode !== 'chroma'} onClick={analyzeMatteStability}>分析色度键透明度抖动</button>
                   {alphaDiagnostics && (
                     <div className="matte-diagnostics">
                       <div><span>原始抖动</span><strong>{percent(alphaDiagnostics.raw)}</strong></div>
                       <div><span>稳定后</span><strong>{percent(alphaDiagnostics.stabilized)}</strong></div>
                       <div className="improvement"><span>改善率</span><strong>{percent(alphaDiagnostics.improvement)}</strong></div>
-                      <small>基于 {alphaDiagnostics.sampledFrames} 帧低分辨率 Alpha 采样；数值越低越稳定。</small>
+                      <small>基于 {alphaDiagnostics.sampledFrames} 帧低分辨率透明度采样；数值越低越稳定。</small>
                     </div>
                   )}
                   <button className="primary-action" onClick={() => setStage('export')}>进入合成设置 →</button>
@@ -1187,45 +1288,45 @@ export default function App() {
                     <label className="field-label">
                       <span>导出预设</span>
                       <select value={exportPreset} onChange={(event) => setExportPreset(event.target.value as ExportPreset)}>
-                        <option value="generic">通用 PNG + JSON</option>
-                        <option value="aseprite">Aseprite JSON</option>
-                        <option value="godot">Godot SpriteFrames</option>
-                        <option value="unity">Unity JSON</option>
+                        <option value="generic">通用图片与数据</option>
+                        <option value="aseprite">像素编辑器数据</option>
+                        <option value="godot">戈多引擎动画资源</option>
+                        <option value="unity">游戏引擎数据</option>
                       </select>
                     </label>
                   </div>
-                  <div className="export-mode-tabs" role="group" aria-label="SpriteSheet 排布模式">
+                  <div className="export-mode-tabs" role="group" aria-label="精灵图排布模式">
                     <button className={trimMode === 'grid' ? 'active' : ''} onClick={() => setTrimMode('grid')}>等距网格</button>
-                    <button className={trimMode === 'tight' ? 'active' : ''} onClick={() => setTrimMode('tight')}>Tight Trim</button>
+                    <button className={trimMode === 'tight' ? 'active' : ''} onClick={() => setTrimMode('tight')}>紧凑裁切</button>
                   </div>
                   <Control label="列数" value={String(columns)}>
                     <input type="range" min="1" max={Math.max(1, Math.min(24, selectedFrames.length))} value={Math.min(columns, selectedFrames.length)} onChange={(event) => setColumns(Number(event.target.value))} />
                   </Control>
-                  <Control label="帧间距" value={`${padding}px`}>
+                  <Control label="帧间距" value={`${padding} 像素`}>
                     <input type="range" min="0" max="32" value={padding} onChange={(event) => setPadding(Number(event.target.value))} />
                   </Control>
                   {trimMode === 'tight' && (
-                    <Control label="Alpha 裁切阈值" value={String(alphaThreshold)}>
+                    <Control label="透明度裁切阈值" value={String(alphaThreshold)}>
                       <input type="range" min="1" max="255" value={alphaThreshold} onChange={(event) => setAlphaThreshold(Number(event.target.value))} />
                     </Control>
                   )}
                   <div className="export-subsection">
-                    <div className="subsection-heading"><span>PIVOT / SOURCE SPACE</span><small>{pivotX.toFixed(2)}, {pivotY.toFixed(2)}</small></div>
+                    <div className="subsection-heading"><span>锚点与原图坐标</span><small>{pivotX.toFixed(2)}, {pivotY.toFixed(2)}</small></div>
                     <div className="pivot-presets">
                       <button onClick={() => { setPivotX(0.5); setPivotY(0.5) }}>中心</button>
                       <button onClick={() => { setPivotX(0.5); setPivotY(1) }}>底部中心</button>
                     </div>
-                    <Control label="Pivot X" value={pivotX.toFixed(2)}>
+                    <Control label="横向锚点" value={pivotX.toFixed(2)}>
                       <input type="range" min="0" max="1" step="0.01" value={pivotX} onChange={(event) => setPivotX(Number(event.target.value))} />
                     </Control>
-                    <Control label="Pivot Y" value={pivotY.toFixed(2)}>
+                    <Control label="纵向锚点" value={pivotY.toFixed(2)}>
                       <input type="range" min="0" max="1" step="0.01" value={pivotY} onChange={(event) => setPivotY(Number(event.target.value))} />
                     </Control>
                   </div>
                   <div className="export-subsection duration-editor">
-                    <div className="subsection-heading"><span>FRAME TIMING</span><small>{selectedFrames.length} FRAMES</small></div>
+                    <div className="subsection-heading"><span>帧时长</span><small>{selectedFrames.length} 帧</small></div>
                     <label className="field-label compact">
-                      <span>默认时长（ms）</span>
+                      <span>默认时长（毫秒）</span>
                       <input type="number" min="1" max="60000" value={defaultFrameDuration} onChange={(event) => setDefaultFrameDuration(Math.max(1, Number(event.target.value)))} />
                     </label>
                     <div className="duration-grid">
@@ -1247,25 +1348,25 @@ export default function App() {
                     </div>
                   </div>
                   {exportPreset === 'unity' && (
-                    <Control label="Pixels Per Unit" value={String(pixelsPerUnit)}>
+                    <Control label="每单位像素数" value={String(pixelsPerUnit)}>
                       <input type="range" min="1" max="512" value={pixelsPerUnit} onChange={(event) => setPixelsPerUnit(Number(event.target.value))} />
                     </Control>
                   )}
                   <button className="secondary-action" onClick={renderExport}>刷新合成预览</button>
                   {exportPreview && (
                     <>
-                      <div className="sheet-preview checkerboard"><img src={exportPreview} alt="Sprite Sheet 预览" /></div>
+                      <div className="sheet-preview checkerboard"><img src={exportPreview} alt="精灵图预览" /></div>
                       {exportManifest && (
                         <div className="export-summary">
-                          <span>{exportManifest.sheetSize.width} × {exportManifest.sheetSize.height}px</span>
-                          <span>{exportManifest.animation.duration}ms</span>
-                          <span>{exportManifest.trimMode === 'tight' ? 'Tight Trim' : 'Grid'}</span>
+                          <span>{exportManifest.sheetSize.width} × {exportManifest.sheetSize.height} 像素</span>
+                          <span>{exportManifest.animation.duration} 毫秒</span>
+                          <span>{exportManifest.trimMode === 'tight' ? '紧凑裁切' : '等距网格'}</span>
                         </div>
                       )}
                     </>
                   )}
                   <button className="primary-action" onClick={downloadSprite}>
-                    下载 {exportPreset === 'godot' ? 'PNG + TRES + JSON' : 'PNG + 数据文件'}
+                    下载图片与数据文件
                   </button>
                 </>
               )}
@@ -1274,15 +1375,26 @@ export default function App() {
         )}
       </main>
 
-      <footer><span>FRAMELOOP STUDIO</span><span>Browser-first · MCP-ready · Open pipeline</span></footer>
+      <footer><span>帧环工坊</span><span>浏览器本地运行 · 支持自动化接入 · 开放工作流</span></footer>
     </div>
   )
 }
 
-function Control({ label, value, children }: { label: string; value: string; children: React.ReactNode }) {
+function Control({
+  label,
+  value,
+  description,
+  children,
+}: {
+  label: string
+  value: string
+  description?: string
+  children: React.ReactNode
+}) {
   return (
     <label className="control">
       <span><b>{label}</b><output>{value}</output></span>
+      {description && <small className="control-description">{description}</small>}
       {children}
     </label>
   )
@@ -1340,7 +1452,7 @@ function CandidateComparison({
   if (candidates.length < 2) return null
   return (
     <section className="comparison-board">
-      <div className="comparison-heading"><span>A/B LOOP REVIEW</span><small>首尾帧与诊断分项</small></div>
+      <div className="comparison-heading"><span>循环候选对比</span><small>首尾帧与诊断分项</small></div>
       <div className="comparison-columns">
         {slots.map((candidateIndex, slot) => {
           const candidate = candidates[candidateIndex]
@@ -1349,11 +1461,11 @@ function CandidateComparison({
           const end = frames[candidate.endFrame]
           return (
             <article key={`${slot}-${candidateIndex}`}>
-              <header><b>{slot === 0 ? 'A' : 'B'}</b><span>候选 0{candidateIndex + 1}</span><strong>{percent(candidate.confidence)}</strong></header>
+              <header><b>{slot === 0 ? '一' : '二'}</b><span>候选 0{candidateIndex + 1}</span><strong>{percent(candidate.confidence)}</strong></header>
               <div className="seam-pair">
-                <figure><img src={start?.previewUrl} alt={`候选 ${candidateIndex + 1} 起始帧`} /><figcaption>START {candidate.startFrame + 1}</figcaption></figure>
+                <figure><img src={start?.previewUrl} alt={`候选 ${candidateIndex + 1} 起始帧`} /><figcaption>起始 {candidate.startFrame + 1}</figcaption></figure>
                 <span>→</span>
-                <figure><img src={end?.previewUrl} alt={`候选 ${candidateIndex + 1} 结束帧`} /><figcaption>END {candidate.endFrame + 1}</figcaption></figure>
+                <figure><img src={end?.previewUrl} alt={`候选 ${candidateIndex + 1} 结束帧`} /><figcaption>结束 {candidate.endFrame + 1}</figcaption></figure>
               </div>
               <dl>
                 <div><dt>闭合</dt><dd>{candidate.diagnostics.closure.toFixed(3)}</dd></div>
@@ -1362,7 +1474,7 @@ function CandidateComparison({
                 <div><dt>静止惩罚</dt><dd>{candidate.diagnostics.staticPenalty.toFixed(3)}</dd></div>
               </dl>
               {candidate.suggestsDropLastFrame && <p className="comparison-alert">末帧疑似与首帧重复</p>}
-              <button onClick={() => onUse(candidate)}>采用候选 {slot === 0 ? 'A' : 'B'}</button>
+              <button onClick={() => onUse(candidate)}>采用候选{slot === 0 ? '一' : '二'}</button>
             </article>
           )
         })}

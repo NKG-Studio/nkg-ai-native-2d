@@ -34,6 +34,8 @@ export function pointInContainedImage(
 export interface MaskStroke {
   mode: MaskBrushMode
   size: number
+  /** 旧项目未保存该字段，缺省时继续按相对画面尺寸解释。 */
+  sizeUnit?: 'relative' | 'pixel'
   points: MaskPoint[]
 }
 
@@ -65,6 +67,7 @@ export const createMaskEditorState = (): MaskEditorState => ({
 const normalizeStroke = (stroke: MaskStroke): MaskStroke => ({
   mode: stroke.mode,
   size: Math.max(1, stroke.size),
+  sizeUnit: stroke.sizeUnit,
   points: stroke.points.map((point) => ({
     x: Math.max(0, Math.min(1, point.x)),
     y: Math.max(0, Math.min(1, point.y)),
@@ -132,13 +135,20 @@ export function maskEditorReducer(state: MaskEditorState, action: MaskEditorActi
   }
 }
 
+export function maskStrokeDiameterPixels(stroke: MaskStroke, width: number, height: number) {
+  return stroke.sizeUnit === 'pixel'
+    ? Math.max(1, stroke.size)
+    : Math.max(2, stroke.size * Math.min(width, height) / 100)
+}
+
 function traceStroke(context: CanvasRenderingContext2D, stroke: MaskStroke, width: number, height: number) {
   if (stroke.points.length === 0) return
-  const radius = Math.max(1, stroke.size * Math.min(width, height) / 200)
+  const diameter = maskStrokeDiameterPixels(stroke, width, height)
+  const radius = diameter / 2
   const points = stroke.points.map((point) => ({ x: point.x * width, y: point.y * height }))
   context.lineCap = 'round'
   context.lineJoin = 'round'
-  context.lineWidth = radius * 2
+  context.lineWidth = diameter
   const first = points[0]!
   context.beginPath()
   context.moveTo(first.x, first.y)

@@ -101,6 +101,41 @@ export interface BrowserVideoCaptureResult {
   scan: BrowserVideoScan
 }
 
+export interface LoopScanWindowConfig {
+  safeFps: number
+  minLoopFrames: number
+  maxLoopFrames: number
+  windowFrames: number
+  overlapFrames: number
+  stride: number
+}
+
+export function createLoopScanWindowConfig(
+  fps: number,
+  minLoopFrames: number,
+  maxLoopSeconds: number,
+): LoopScanWindowConfig {
+  const safeFps = Math.max(0.01, fps)
+  const safeMinLoopFrames = Math.max(2, Math.floor(minLoopFrames))
+  const maxLoopFrames = Math.max(
+    safeMinLoopFrames,
+    Math.round(Math.max(0.1, maxLoopSeconds) * safeFps),
+  )
+
+  // 两倍最长循环的窗口配合一倍最长循环的重叠，可保证任意不超过
+  // maxLoopFrames 的连续片段完整落入至少一个扫描窗口。
+  const windowFrames = maxLoopFrames * 2
+  const overlapFrames = maxLoopFrames
+  return {
+    safeFps,
+    minLoopFrames: safeMinLoopFrames,
+    maxLoopFrames,
+    windowFrames,
+    overlapFrames,
+    stride: windowFrames - overlapFrames,
+  }
+}
+
 function offsetCandidate(candidate: LoopCandidate, offset: number): LoopCandidate {
   return {
     ...candidate,
@@ -190,7 +225,7 @@ export async function captureVideoFrames(
   file: File,
   fps: number,
   minLoopFrames: number,
-  analysisWindowSeconds: number,
+  maxLoopSeconds: number,
   onProgress?: (progress: ExtractionProgress) => void,
   signal?: AbortSignal,
 ): Promise<BrowserVideoCaptureResult> {
@@ -204,12 +239,9 @@ export async function captureVideoFrames(
     await waitForEvent(video, 'loadedmetadata')
     const duration = video.duration
     if (!Number.isFinite(duration) || duration <= 0) throw new Error('无法读取视频时长')
-    const safeFps = Math.max(0.01, fps)
+    const scanConfig = createLoopScanWindowConfig(fps, minLoopFrames, maxLoopSeconds)
+    const { safeFps, minLoopFrames: safeMinLoopFrames, maxLoopFrames, windowFrames, stride } = scanConfig
     const total = Math.max(2, Math.ceil(duration * safeFps))
-    const safeMinLoopFrames = Math.max(2, Math.floor(minLoopFrames))
-    const windowFrames = Math.max(safeMinLoopFrames, Math.round(Math.max(0.1, analysisWindowSeconds) * safeFps))
-    const overlapFrames = Math.min(windowFrames - 1, Math.max(safeMinLoopFrames, Math.floor(windowFrames / 4)))
-    const stride = Math.max(1, windowFrames - overlapFrames)
     const sample = document.createElement('canvas')
     sample.width = FEATURE_SIZE
     sample.height = FEATURE_SIZE
@@ -233,7 +265,7 @@ export async function captureVideoFrames(
         if (segment.length < safeMinLoopFrames) continue
         windowCandidates.push(...detectLoopCandidates(segment, {
           minFrames: safeMinLoopFrames,
-          maxFrames: segment.length,
+          maxFrames: Math.min(maxLoopFrames, segment.length),
           topK: 5,
           motionWindow: 3,
         }).map((candidate) => offsetCandidate(candidate, segment[0]!.index)))

@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import type { LoopCandidate } from '@frameloop/core'
-import { mergeLoopCandidates, stabilizeTemporalAlpha } from './media'
+import { createLoopScanWindowConfig, mergeLoopCandidates, stabilizeTemporalAlpha } from './media'
+
+describe('createLoopScanWindowConfig', () => {
+  it('turns the longest loop into a fully overlapping internal scan window', () => {
+    expect(createLoopScanWindowConfig(12, 8, 20)).toEqual({
+      safeFps: 12,
+      minLoopFrames: 8,
+      maxLoopFrames: 240,
+      windowFrames: 480,
+      overlapFrames: 240,
+      stride: 240,
+    })
+  })
+
+  it('never allows the longest loop to be shorter than the minimum loop', () => {
+    expect(createLoopScanWindowConfig(12, 24, 0.5).maxLoopFrames).toBe(24)
+  })
+})
 
 describe('stabilizeTemporalAlpha', () => {
   it('uses the temporal median to suppress a one-frame alpha spike', () => {

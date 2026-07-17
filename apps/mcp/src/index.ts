@@ -14,6 +14,7 @@ import {
 } from './export-plans.js'
 import { exportSpriteBundle, validateSpriteBundle } from './sprite-bundle.js'
 import { applyAiMatteBatch, applyChromaKeyBatch } from './matting.js'
+import { analyzeMatteQuality, refineMatteBatch } from './matte-refinement.js'
 import {
   createSpriteSheetFile,
   exportVideoFrames,
@@ -28,7 +29,7 @@ import {
 const server = new McpServer(
   { name: 'frameloop-mcp', version: '0.1.0' },
   {
-    instructions: '先用 inspect_video 获取媒体信息，再用 analyze_video_loop 自动检测多段动作并生成段首闭环与段内周期核心候选。随后调用 review_video_action_segments，让多模态 AI 根据动作概览和六帧接缝选择最早完整闭环。单动作可在确认路径和边界后调用 export_reviewed_action；多动作应先调用 create_action_export_plan 展示完整计划，由用户确认后再调用 export_action_batch。透明背景使用 apply_chroma_key_batch 或 apply_ai_matte_batch，最终用 export_sprite_bundle 合并并用 validate_sprite_bundle 验证。所有路径均为运行 MCP 进程所在机器的本地绝对或相对路径。',
+    instructions: '先用 inspect_video 获取媒体信息，再用 analyze_video_loop 自动检测多段动作并生成段首闭环与段内周期核心候选。随后调用 review_video_action_segments，让多模态 AI 根据动作概览和六帧接缝选择最早完整闭环。单动作可在确认路径和边界后调用 export_reviewed_action；多动作应先调用 create_action_export_plan 展示完整计划，由用户确认后再调用 export_action_batch。透明背景先使用 apply_chroma_key_batch 或 apply_ai_matte_batch，再用 analyze_matte_quality 定位孤立像素、孔洞和半透明边缘；需要修复时调用 refine_matte_batch，并再次诊断确认。最终用 export_sprite_bundle 合并并用 validate_sprite_bundle 验证。所有路径均为运行 MCP 进程所在机器的本地绝对或相对路径。',
   },
 )
 
@@ -51,6 +52,17 @@ const bundleAnimationSchema = z.object({
   frame_paths: z.array(z.string().min(1)).min(1),
   durations: z.array(z.number().int().positive()).optional(),
   source_frame_ids: z.array(z.number().int().nonnegative()).optional(),
+})
+
+const matteCorrectionSchema = z.object({
+  frame_index: z.number().int().nonnegative().describe('从 0 开始的帧序号'),
+  mode: z.enum(['remove', 'restore']).describe('移除背景残点，或从源帧恢复主体像素'),
+  diameter_pixels: z.number().min(1).max(4096).describe('笔刷直径，最小可精确到 1 像素'),
+  coordinate_space: z.enum(['pixel', 'normalized']).default('pixel').describe('像素坐标，或 0 到 1 的归一化坐标'),
+  points: z.array(z.object({
+    x: z.number(),
+    y: z.number(),
+  })).min(1).max(10000).describe('按顺序连接的笔画点；单点可修正一个像素'),
 })
 
 server.registerTool(
@@ -690,6 +702,79 @@ server.registerTool(
         force: completed === frameTotal,
       }),
     }))
+  },
+)
+
+server.registerTool(
+  'analyze_matte_quality',
+  {
+    title: '诊断蒙版质量',
+    description: '逐帧检查透明 PNG，定位疑似背景残点、主体孔洞和半透明边缘，并返回面积、边界框和中心坐标。只读，不修改文件。',
+    inputSchema: {
+      matte_paths: z.array(z.string().min(1)).min(1).max(1000).describe('待诊断的透明 PNG 路径，顺序即帧序号'),
+      alpha_threshold: z.number().int().min(1).max(255).default(128).describe('区分前景与背景的透明度阈值'),
+      detached_area_threshold: z.number().int().min(0).max(1000000).default(64).describe('不超过此面积的非主体连通块视为疑似背景残点'),
+      hole_area_threshold: z.number().int().min(0).max(1000000).default(64).describe('不超过此面积的封闭透明区视为疑似主体孔洞'),
+      max_regions_per_frame: z.number().int().min(1).max(100).default(20).describe('每帧每类最多返回的可疑区域数'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  },
+  async ({ matte_paths, alpha_threshold, detached_area_threshold, hole_area_threshold, max_regions_per_frame }, extra) => {
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: matte_paths.length, message: '开始诊断蒙版质量', force: true })
+    return textResult(await analyzeMatteQuality({
+      mattePaths: matte_paths,
+      alphaThreshold: alpha_threshold,
+      detachedAreaThreshold: detached_area_threshold,
+      holeAreaThreshold: hole_area_threshold,
+      maxRegionsPerFrame: max_regions_per_frame,
+      onProgress: (completed, total, message) => progress({
+        progress: completed, total, message, force: completed === total,
+      }),
+    }))
+  },
+)
+
+server.registerTool(
+  'refine_matte_batch',
+  {
+    title: '批量精修蒙版',
+    description: '按 AI 给出的逐帧笔画精确移除或恢复像素，也可按面积自动清理孤立残点和填补孔洞；输出新 PNG 和可审计清单，不覆盖输入文件。',
+    inputSchema: {
+      source_frame_paths: z.array(z.string().min(1)).min(1).max(1000).describe('未抠图源帧，用于恢复被误删的主体像素'),
+      matte_paths: z.array(z.string().min(1)).min(1).max(1000).describe('待精修的透明 PNG，与源帧一一对应'),
+      output_directory: z.string().min(1).describe('精修结果输出目录'),
+      corrections: z.array(matteCorrectionSchema).max(10000).default([]).describe('AI 指定的逐帧移除或恢复笔画'),
+      alpha_threshold: z.number().int().min(1).max(255).default(128).describe('自动清理时区分前景与背景的透明度阈值'),
+      remove_islands_below: z.number().int().min(0).max(1000000).default(0).describe('自动移除不超过此面积的孤立前景；0 表示关闭'),
+      fill_holes_below: z.number().int().min(0).max(1000000).default(0).describe('自动填补不超过此面积的主体孔洞；0 表示关闭'),
+      conflict_policy: z.enum(['fail', 'replace']).default('fail').describe('目标已存在时失败，或替换旧结果'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  async ({ source_frame_paths, matte_paths, output_directory, corrections, alpha_threshold, remove_islands_below, fill_holes_below, conflict_policy }, extra) => {
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: matte_paths.length, message: '开始批量精修蒙版', force: true })
+    const result = await refineMatteBatch({
+      sourceFramePaths: source_frame_paths,
+      mattePaths: matte_paths,
+      outputDirectory: output_directory,
+      corrections: corrections.map((correction) => ({
+        frameIndex: correction.frame_index,
+        mode: correction.mode,
+        diameterPixels: correction.diameter_pixels,
+        coordinateSpace: correction.coordinate_space,
+        points: correction.points,
+      })),
+      alphaThreshold: alpha_threshold,
+      removeIslandsBelow: remove_islands_below,
+      fillHolesBelow: fill_holes_below,
+      conflictPolicy: conflict_policy,
+      onProgress: (completed, total, message) => progress({
+        progress: completed, total, message, force: completed === total,
+      }),
+    })
+    return textResult({ ...result, nextTool: 'analyze_matte_quality' })
   },
 )
 
