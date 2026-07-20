@@ -85,7 +85,42 @@ npm run build --workspace @frameloop/mcp
 codex mcp add frameloop -- node apps/mcp/dist/index.js
 ```
 
-重启客户端后可以调用：
+### 安装工作流 Skill（推荐）
+
+仓库内置的 [`frameloop-video-to-sprite`](skills/frameloop-video-to-sprite/SKILL.md) Skill 会约束 AI 按“完整分析 → 分页复核 → 导出计划确认 → 批量抽帧 → 可选抠图精修 → Bundle 验证”的顺序执行，并在漏分段、重复末帧、VFR 和校验失败时使用明确的回退策略。
+
+把 Skill 复制到个人 Codex Skill 目录。Windows PowerShell：
+
+```powershell
+$codexSkills = if ($env:CODEX_HOME) {
+  Join-Path $env:CODEX_HOME 'skills'
+} else {
+  Join-Path $env:USERPROFILE '.codex\skills'
+}
+New-Item -ItemType Directory -Force $codexSkills | Out-Null
+Copy-Item -Recurse -Force .\skills\frameloop-video-to-sprite $codexSkills
+```
+
+macOS / Linux：
+
+```bash
+CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
+mkdir -p "$CODEX_SKILLS_DIR"
+cp -R skills/frameloop-video-to-sprite "$CODEX_SKILLS_DIR/"
+```
+
+拉取到新版 Skill 后重新复制即可更新。完成 MCP 注册和 Skill 安装后重启 Codex，并确认 Skill 列表中出现 **FrameLoop 视频转图集**、`codex mcp list` 中出现 `frameloop`。
+
+调用示例：
+
+```text
+使用 $frameloop-video-to-sprite 处理 D:\assets\hero-actions.mp4，识别视频里的全部动作，
+输出透明背景的 Godot Sprite Atlas 到 D:\outputs\hero；执行批量写入计划前先让我确认。
+```
+
+Skill 负责流程编排和质量门禁，MCP 负责实际分析与文件生成；安装 Skill 不会自动注册 MCP。当前视频路径必须能被本机 MCP 进程访问，分析和导出仍按指定 FPS 重采样，平滑转场也可能需要人工指定边界。
+
+完成后，可由 Skill 编排以下 MCP 工具：
 
 | MCP 工具 | 作用 | 写入文件 |
 | --- | --- | --- |

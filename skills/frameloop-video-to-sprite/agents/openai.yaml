@@ -1,0 +1,4 @@
+interface:
+  display_name: "FrameLoop 视频转图集"
+  short_description: "编排多段视频分析、动作复核、抠图精修和序列帧图集交付"
+  default_prompt: "使用 $frameloop-video-to-sprite 从本地视频复核动作循环并交付经过校验的序列帧图集。"
