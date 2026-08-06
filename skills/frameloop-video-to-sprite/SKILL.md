@@ -86,7 +86,9 @@ description: 编排 FrameLoop MCP，将本地视频（包括一个视频中的�
 2. 调用 `export_sprite_bundle`，为每个动画提供唯一、稳定的名称。仅在用户指定时选择 Aseprite、Godot 或 Unity 预设。
 3. 调用 `validate_sprite_bundle`。
 4. 若 `valid` 为 `false`，按错误修复并重新导出；若只有警告，按 [质量门禁](references/quality-gates.md) 处理并披露。
-5. 再次验证，直到 `valid: true`。
+5. 用户需要逐张最小 PNG 时，在验证通过后调用 `slice_sprite_sheet`，传入 Bundle Manifest；不要从预览图或截图反推已有 Manifest 的帧坐标。
+6. 用户只提供外部图集时，先调用 `inspect_sprite_sheet_layout`，同时查看原图与候选叠加图。启发式建议不是最终决定；根据视觉复核选择 `grid`、`components`，或用 `regions` 明确提供 `rect`、`rotated_rect`、`polygon`。
+7. 再次验证，直到 `valid: true`。
 
 ## 完成交付
 
@@ -95,6 +97,7 @@ description: 编排 FrameLoop MCP，将本地视频（包括一个视频中的�
 - 源视频和分析 FPS
 - 动作列表、各动作帧数及复核置信度
 - Atlas PNG、Bundle Manifest 和引擎配套文件路径
+- 若请求独立切图：Sprite 输出目录、`sprites.json` 和实际切出帧数
 - 逐动作 Manifest 或输出目录
 - `validate_sprite_bundle` 的 `valid`、错误、警告和关键诊断
 - 任何重采样、手工边界、低置信度或未解决的抠图风险

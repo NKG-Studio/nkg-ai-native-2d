@@ -1,6 +1,13 @@
 import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, resolve } from 'node:path'
-import { createSpriteLayout, createTightSpriteLayout } from '@frameloop/core'
+import {
+  analyzeSpriteSheet,
+  createSpriteLayout,
+  createTightSpriteLayout,
+  type SpriteBackgroundMode,
+  type SpriteBoundsMode,
+  type SpriteDetectionPoint,
+} from '@frameloop/core'
 import sharp from 'sharp'
 
 export type SpriteBundlePreset = 'generic' | 'aseprite' | 'godot' | 'unity'
@@ -51,6 +58,54 @@ export interface SpriteBundleManifest {
     duration: number
   }>
   frames: SpriteBundleFrame[]
+}
+
+export interface SpriteSliceManifest {
+  format: 'frameloop-sprite-slices-v1'
+  image: string
+  sourceManifest: string | null
+  alphaThreshold: number
+  frameCount: number
+  frames: Array<{
+    index: number
+    filename: string
+    sourceFrameId: number
+    animation?: string
+    animationFrame?: number
+    file: string
+    width: number
+    height: number
+    empty: boolean
+    sourceBounds: Rect
+    sourceSize: { w: number; h: number }
+    pivot: { x: number; y: number }
+    duration: number
+    boundsMode?: SpriteBoundsMode
+    sourceRotationDegrees?: number
+    sourcePolygon?: SpriteDetectionPoint[]
+  }>
+}
+
+export type SpriteCustomRegion = {
+  type: 'rect'
+  name?: string
+  x: number
+  y: number
+  w: number
+  h: number
+} | {
+  type: 'rotated_rect'
+  name?: string
+  cx: number
+  cy: number
+  w: number
+  h: number
+  angleDegrees: number
+} | {
+  type: 'polygon'
+  name?: string
+  points: SpriteDetectionPoint[]
+  angleDegrees?: number
 }
 
 interface PreparedFrame {
@@ -357,6 +412,416 @@ export async function exportSpriteBundle(options: {
     height: layout.height,
     frameCount: frames.length,
     animationCount: animations.length,
+  }
+}
+
+interface IrregularSlicePlan {
+  name: string
+  sourceBounds: Rect
+  polygon: SpriteDetectionPoint[]
+  labelIds?: number[]
+  rotationDegrees: number
+}
+
+function rotatedRectPoints(region: Extract<SpriteCustomRegion, { type: 'rotated_rect' }>) {
+  const angle = region.angleDegrees * Math.PI / 180
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  return [
+    { x: -region.w / 2, y: -region.h / 2 },
+    { x: region.w / 2, y: -region.h / 2 },
+    { x: region.w / 2, y: region.h / 2 },
+    { x: -region.w / 2, y: region.h / 2 },
+  ].map((point) => ({
+    x: region.cx + point.x * cos - point.y * sin,
+    y: region.cy + point.x * sin + point.y * cos,
+  }))
+}
+
+function polygonBounds(points: SpriteDetectionPoint[]) {
+  if (points.length < 3) throw new Error('polygon 至少需要 3 个点')
+  const minX = Math.floor(Math.min(...points.map((point) => point.x)))
+  const minY = Math.floor(Math.min(...points.map((point) => point.y)))
+  const maxX = Math.ceil(Math.max(...points.map((point) => point.x)))
+  const maxY = Math.ceil(Math.max(...points.map((point) => point.y)))
+  return { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) }
+}
+
+function pointInPolygon(x: number, y: number, polygon: SpriteDetectionPoint[]) {
+  let inside = false
+  for (let current = 0, previous = polygon.length - 1; current < polygon.length; previous = current++) {
+    const a = polygon[current]!
+    const b = polygon[previous]!
+    if ((a.y > y) !== (b.y > y)
+      && x < (b.x - a.x) * (y - a.y) / ((b.y - a.y) || Number.EPSILON) + a.x) inside = !inside
+  }
+  return inside
+}
+
+async function sliceIrregularSpriteSheet(options: {
+  atlasPath: string
+  outputDirectory?: string
+  mode: 'components' | 'regions'
+  boundsMode: SpriteBoundsMode
+  regions?: SpriteCustomRegion[]
+  backgroundMode?: SpriteBackgroundMode
+  alphaThreshold?: number
+  backgroundTolerance?: number
+  minArea?: number
+  mergeGap?: number
+  removeBackground?: boolean
+  conflictPolicy?: BundleConflictPolicy
+  onProgress?: (completed: number, total: number, message: string) => void | Promise<void>
+}) {
+  const imagePath = resolve(options.atlasPath)
+  const { data, info } = await sharp(imagePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const alphaThreshold = Math.max(0, Math.min(255, Math.round(options.alphaThreshold ?? 1)))
+  const analysis = analyzeSpriteSheet(data, info.width, info.height, {
+    backgroundMode: options.backgroundMode ?? 'auto',
+    alphaThreshold,
+    backgroundTolerance: options.backgroundTolerance,
+    minArea: options.minArea,
+    mergeGap: options.mergeGap,
+  })
+  let plans: IrregularSlicePlan[]
+  if (options.mode === 'components') {
+    if (analysis.sprites.length === 0) throw new Error('没有检测到可切出的 Sprite 区域')
+    plans = analysis.sprites.map((sprite, index) => ({
+      name: `sprite_${String(index).padStart(3, '0')}`,
+      sourceBounds: sprite.bounds,
+      polygon: sprite.polygon,
+      labelIds: sprite.labelIds,
+      rotationDegrees: options.boundsMode === 'oriented' ? sprite.orientedBounds.angleDegrees : 0,
+    }))
+  } else {
+    if (!options.regions?.length) throw new Error('regions 模式必须提供至少一个区域')
+    plans = options.regions.map((region, index) => {
+      const name = safeName(region.name ?? `sprite_${String(index).padStart(3, '0')}`)
+      if (region.type === 'rect') {
+        const sourceBounds = {
+          x: Math.round(region.x), y: Math.round(region.y),
+          w: Math.max(1, Math.round(region.w)), h: Math.max(1, Math.round(region.h)),
+        }
+        return {
+          name,
+          sourceBounds,
+          polygon: [
+            { x: sourceBounds.x, y: sourceBounds.y },
+            { x: sourceBounds.x + sourceBounds.w, y: sourceBounds.y },
+            { x: sourceBounds.x + sourceBounds.w, y: sourceBounds.y + sourceBounds.h },
+            { x: sourceBounds.x, y: sourceBounds.y + sourceBounds.h },
+          ],
+          rotationDegrees: 0,
+        }
+      }
+      const polygon = region.type === 'rotated_rect' ? rotatedRectPoints(region) : region.points
+      return {
+        name,
+        sourceBounds: polygonBounds(polygon),
+        polygon,
+        rotationDegrees: region.type === 'rotated_rect'
+          ? region.angleDegrees
+          : (options.boundsMode === 'oriented' ? (region.angleDegrees ?? 0) : 0),
+      }
+    })
+  }
+  const names = plans.map((plan) => safeName(plan.name))
+  if (new Set(names).size !== names.length) throw new Error('切图文件名冲突')
+  for (const plan of plans) {
+    const bounds = plan.sourceBounds
+    if (bounds.x < 0 || bounds.y < 0 || bounds.w < 1 || bounds.h < 1
+      || bounds.x + bounds.w > info.width || bounds.y + bounds.h > info.height) {
+      throw new Error(`区域越出 Atlas：${plan.name}`)
+    }
+  }
+  const outputDirectory = resolve(options.outputDirectory
+    ?? `${imagePath.slice(0, imagePath.length - extname(imagePath).length)}-sprites`)
+  const manifestPath = resolve(outputDirectory, 'sprites.json')
+  const files = names.map((name) => resolve(outputDirectory, `${name}.png`))
+  const existing: string[] = []
+  for (const path of [...files, manifestPath]) {
+    if (await access(path).then(() => true).catch(() => false)) existing.push(path)
+  }
+  const conflictPolicy = options.conflictPolicy ?? 'fail'
+  if (existing.length > 0 && conflictPolicy === 'fail') throw new Error(`目标文件已存在：${existing.join(', ')}`)
+  if (conflictPolicy === 'replace') await Promise.all([...files, manifestPath].map((path) => rm(path, { force: true })))
+  await mkdir(outputDirectory, { recursive: true })
+  const manifestFrames: SpriteSliceManifest['frames'] = []
+  for (let index = 0; index < plans.length; index += 1) {
+    const plan = plans[index]!
+    const labelIds = plan.labelIds ? new Set(plan.labelIds) : null
+    const bounds = plan.sourceBounds
+    const crop = Buffer.alloc(bounds.w * bounds.h * 4)
+    for (let localY = 0; localY < bounds.h; localY += 1) {
+      for (let localX = 0; localX < bounds.w; localX += 1) {
+        const sourceX = bounds.x + localX
+        const sourceY = bounds.y + localY
+        const sourcePixel = sourceY * info.width + sourceX
+        const inShape = labelIds
+          ? labelIds.has(analysis.labels[sourcePixel] ?? 0)
+          : pointInPolygon(sourceX + 0.5, sourceY + 0.5, plan.polygon)
+        if (!inShape || (options.removeBackground !== false && !analysis.foregroundMask[sourcePixel])) continue
+        const sourceOffset = sourcePixel * 4
+        const targetOffset = (localY * bounds.w + localX) * 4
+        data.copy(crop, targetOffset, sourceOffset, sourceOffset + 4)
+      }
+    }
+    let processed = await sharp(crop, { raw: { width: bounds.w, height: bounds.h, channels: 4 } })
+      .rotate(-plan.rotationDegrees, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .raw().toBuffer({ resolveWithObject: true })
+    const trim = opaqueBounds(processed.data, processed.info.width, processed.info.height, alphaThreshold)
+    const outputPath = files[index]!
+    if (trim.empty) {
+      await sharp({
+        create: { width: 1, height: 1, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+      }).png().toFile(outputPath)
+    } else {
+      await sharp(processed.data, {
+        raw: { width: processed.info.width, height: processed.info.height, channels: processed.info.channels },
+      }).extract({ left: trim.x, top: trim.y, width: trim.w, height: trim.h }).png().toFile(outputPath)
+    }
+    manifestFrames.push({
+      index,
+      filename: names[index]!,
+      sourceFrameId: index,
+      file: basename(outputPath),
+      width: trim.w,
+      height: trim.h,
+      empty: trim.empty,
+      sourceBounds: bounds,
+      sourceSize: { w: info.width, h: info.height },
+      pivot: { x: 0.5, y: 1 },
+      duration: 100,
+      boundsMode: options.boundsMode,
+      sourceRotationDegrees: plan.rotationDegrees,
+      sourcePolygon: plan.polygon,
+    })
+    await options.onProgress?.(index + 1, plans.length, `已切出 ${index + 1}/${plans.length} 张`)
+  }
+  const manifest: SpriteSliceManifest & { mode: 'components' | 'regions'; heuristicDiagnostics?: unknown } = {
+    format: 'frameloop-sprite-slices-v1',
+    image: basename(imagePath),
+    sourceManifest: null,
+    alphaThreshold,
+    frameCount: manifestFrames.length,
+    mode: options.mode,
+    frames: manifestFrames,
+    heuristicDiagnostics: options.mode === 'components' ? {
+      background: analysis.background,
+      gridCandidate: analysis.gridCandidate,
+      suggestion: analysis.recommendation,
+      warnings: analysis.warnings,
+    } : undefined,
+  }
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf8')
+  return {
+    outputDirectory,
+    manifestPath,
+    frameCount: manifestFrames.length,
+    emptyFrameCount: manifestFrames.filter((frame) => frame.empty).length,
+    files,
+    mode: options.mode,
+    boundsMode: options.boundsMode,
+  }
+}
+
+export async function sliceSpriteSheet(options: {
+  manifestPath?: string
+  atlasPath?: string
+  outputDirectory?: string
+  columns?: number
+  rows?: number
+  padding?: number
+  frameCount?: number
+  mode?: 'grid' | 'components' | 'regions'
+  boundsMode?: SpriteBoundsMode
+  regions?: SpriteCustomRegion[]
+  backgroundMode?: SpriteBackgroundMode
+  backgroundTolerance?: number
+  minArea?: number
+  mergeGap?: number
+  removeBackground?: boolean
+  alphaThreshold?: number
+  conflictPolicy?: BundleConflictPolicy
+  onProgress?: (completed: number, total: number, message: string) => void | Promise<void>
+}) {
+  if (Boolean(options.manifestPath) === Boolean(options.atlasPath)) {
+    throw new Error('manifest_path 与 atlas_path 必须且只能提供一个')
+  }
+  const sourceManifestPath = options.manifestPath ? resolve(options.manifestPath) : null
+  const requestedMode = options.mode ?? (options.regions?.length ? 'regions' : options.columns || options.rows ? 'grid' : 'components')
+  if (!sourceManifestPath && requestedMode !== 'grid') {
+    return sliceIrregularSpriteSheet({
+      atlasPath: options.atlasPath!,
+      outputDirectory: options.outputDirectory,
+      mode: requestedMode,
+      boundsMode: options.boundsMode ?? 'axis_aligned',
+      regions: options.regions,
+      backgroundMode: options.backgroundMode,
+      alphaThreshold: options.alphaThreshold,
+      backgroundTolerance: options.backgroundTolerance,
+      minArea: options.minArea,
+      mergeGap: options.mergeGap,
+      removeBackground: options.removeBackground,
+      conflictPolicy: options.conflictPolicy,
+      onProgress: options.onProgress,
+    })
+  }
+  let manifest: SpriteBundleManifest
+  let imagePath: string
+  if (sourceManifestPath) {
+    manifest = JSON.parse(await readFile(sourceManifestPath, 'utf8')) as SpriteBundleManifest
+    if (![2, 3].includes(manifest.version) || !manifest.image || !Array.isArray(manifest.frames)) {
+      throw new Error('不支持的 Sprite Manifest')
+    }
+    imagePath = resolve(dirname(sourceManifestPath), manifest.image)
+  } else {
+    imagePath = resolve(options.atlasPath!)
+    const metadata = await sharp(imagePath).metadata()
+    if (!metadata.width || !metadata.height) throw new Error('无法读取 Atlas 尺寸')
+    const columns = Math.max(1, Math.round(options.columns ?? 1))
+    const rows = Math.max(1, Math.round(options.rows ?? 1))
+    const padding = Math.max(0, Math.round(options.padding ?? 0))
+    const availableWidth = metadata.width - Math.max(0, columns - 1) * padding
+    const availableHeight = metadata.height - Math.max(0, rows - 1) * padding
+    if (availableWidth < columns || availableHeight < rows
+      || availableWidth % columns !== 0 || availableHeight % rows !== 0) {
+      throw new Error('Atlas 尺寸无法按指定行列与间距整除')
+    }
+    const frameWidth = availableWidth / columns
+    const frameHeight = availableHeight / rows
+    const slotCount = columns * rows
+    const frameCount = Math.round(options.frameCount ?? slotCount)
+    if (frameCount < 1 || frameCount > slotCount) throw new Error(`frame_count 必须在 1 到 ${slotCount} 之间`)
+    manifest = {
+      version: 3,
+      image: basename(imagePath),
+      preset: 'generic',
+      trimMode: 'grid',
+      alphaThreshold: options.alphaThreshold ?? 1,
+      sheetSize: { width: metadata.width, height: metadata.height },
+      columns,
+      rows,
+      padding,
+      animations: [{
+        name: 'sprite', loop: true, from: 0, to: frameCount - 1, frameCount, duration: frameCount * 100,
+      }],
+      frames: Array.from({ length: frameCount }, (_, index) => ({
+        index,
+        animation: 'sprite',
+        animationFrame: index,
+        sourceFrameId: index,
+        filename: `sprite_${String(index).padStart(3, '0')}`,
+        frame: {
+          x: (index % columns) * (frameWidth + padding),
+          y: Math.floor(index / columns) * (frameHeight + padding),
+          w: frameWidth,
+          h: frameHeight,
+        },
+        rotated: false,
+        trimmed: false,
+        empty: false,
+        spriteSourceSize: { x: 0, y: 0, w: frameWidth, h: frameHeight },
+        sourceSize: { w: frameWidth, h: frameHeight },
+        pivot: { x: 0.5, y: 1 },
+        duration: 100,
+      })),
+    }
+  }
+  const metadata = await sharp(imagePath).metadata()
+  if (!metadata.width || !metadata.height) throw new Error('无法读取 Atlas 尺寸')
+  const outputDirectory = resolve(options.outputDirectory
+    ?? `${imagePath.slice(0, imagePath.length - extname(imagePath).length)}-sprites`)
+  const sliceManifestPath = resolve(outputDirectory, 'sprites.json')
+  const alphaThreshold = Math.max(0, Math.min(255, Math.round(
+    options.alphaThreshold ?? manifest.alphaThreshold ?? 1,
+  )))
+  const conflictPolicy = options.conflictPolicy ?? 'fail'
+  const plannedFiles = manifest.frames.map((frame) => resolve(outputDirectory, `${safeName(frame.filename)}.png`))
+  if (new Set(plannedFiles).size !== plannedFiles.length) throw new Error('切图文件名冲突')
+  const existing: string[] = []
+  for (const path of [...plannedFiles, sliceManifestPath]) {
+    if (await access(path).then(() => true).catch(() => false)) existing.push(path)
+  }
+  if (existing.length > 0 && conflictPolicy === 'fail') {
+    throw new Error(`目标文件已存在：${existing.join(', ')}`)
+  }
+  if (conflictPolicy === 'replace') {
+    await Promise.all([...plannedFiles, sliceManifestPath].map((path) => rm(path, { force: true })))
+  }
+
+  await mkdir(outputDirectory, { recursive: true })
+  const slices: SpriteSliceManifest['frames'] = []
+  for (let index = 0; index < manifest.frames.length; index += 1) {
+    const frame = manifest.frames[index]!
+    if (frame.frame.x < 0 || frame.frame.y < 0 || frame.frame.w < 1 || frame.frame.h < 1
+      || frame.frame.x + frame.frame.w > metadata.width
+      || frame.frame.y + frame.frame.h > metadata.height) {
+      throw new Error(`帧越出 Atlas：${frame.filename}`)
+    }
+    const atlasFrame = sharp(imagePath).extract({
+      left: frame.frame.x,
+      top: frame.frame.y,
+      width: frame.frame.w,
+      height: frame.frame.h,
+    }).ensureAlpha()
+    const { data, info } = await atlasFrame.clone().raw().toBuffer({ resolveWithObject: true })
+    const bounds = opaqueBounds(data, info.width, info.height, alphaThreshold)
+    const outputPath = plannedFiles[index]!
+    if (bounds.empty) {
+      await sharp({
+        create: {
+          width: 1,
+          height: 1,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+      }).png().toFile(outputPath)
+    } else {
+      await atlasFrame.extract({
+        left: bounds.x,
+        top: bounds.y,
+        width: bounds.w,
+        height: bounds.h,
+      }).png().toFile(outputPath)
+    }
+    slices.push({
+      index: frame.index,
+      filename: frame.filename,
+      sourceFrameId: frame.sourceFrameId,
+      animation: frame.animation,
+      animationFrame: frame.animationFrame,
+      file: basename(outputPath),
+      width: bounds.w,
+      height: bounds.h,
+      empty: bounds.empty,
+      sourceBounds: {
+        x: frame.spriteSourceSize.x + bounds.x,
+        y: frame.spriteSourceSize.y + bounds.y,
+        w: bounds.w,
+        h: bounds.h,
+      },
+      sourceSize: frame.sourceSize,
+      pivot: frame.pivot,
+      duration: frame.duration,
+    })
+    await options.onProgress?.(index + 1, manifest.frames.length, `已切出 ${index + 1}/${manifest.frames.length} 张`)
+  }
+  const sliceManifest: SpriteSliceManifest = {
+    format: 'frameloop-sprite-slices-v1',
+    image: basename(imagePath),
+    sourceManifest: sourceManifestPath ? basename(sourceManifestPath) : null,
+    alphaThreshold,
+    frameCount: slices.length,
+    frames: slices,
+  }
+  await writeFile(sliceManifestPath, JSON.stringify(sliceManifest, null, 2), 'utf8')
+  return {
+    outputDirectory,
+    manifestPath: sliceManifestPath,
+    frameCount: slices.length,
+    emptyFrameCount: slices.filter((frame) => frame.empty).length,
+    files: plannedFiles,
   }
 }
 

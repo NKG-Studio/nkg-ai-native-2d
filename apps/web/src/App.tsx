@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useReducer, useRef, useState, type DragEvent as ReactDragEvent } from 'react'
 import {
   analyzeSequence,
+  analyzeSpriteSheet,
   detectLoopCandidates,
   type LoopCandidate,
   type SequenceDiagnostics,
+  type SpriteBackgroundMode,
+  type SpriteBoundsMode,
+  type SpriteSheetDetection,
 } from '@frameloop/core'
 import {
   applyTemporalChromaKey,
@@ -16,9 +20,14 @@ import {
 } from './media'
 import {
   composeSpriteSheet,
+  createGridSliceRegions,
   downloadDataUrl,
   downloadJson,
+  downloadSpriteSlicesZip,
   downloadText,
+  renderSpriteDetectionOverlay,
+  sliceDetectedSpriteRegions,
+  sliceSpriteRegions,
   type SpriteSheetManifest,
   type TrimMode,
 } from './sprite'
@@ -130,6 +139,24 @@ export default function App() {
   const [pixelsPerUnit, setPixelsPerUnit] = useState(100)
   const [exportPreview, setExportPreview] = useState<string | null>(null)
   const [exportManifest, setExportManifest] = useState<SpriteSheetManifest | null>(null)
+  const [spriteSheetFile, setSpriteSheetFile] = useState<File | null>(null)
+  const [spriteSheetCanvas, setSpriteSheetCanvas] = useState<HTMLCanvasElement | null>(null)
+  const [spriteSheetPreview, setSpriteSheetPreview] = useState<string | null>(null)
+  const [sliceColumns, setSliceColumns] = useState(4)
+  const [sliceRows, setSliceRows] = useState(4)
+  const [slicePadding, setSlicePadding] = useState(0)
+  const [sliceFrameCount, setSliceFrameCount] = useState(16)
+  const [sliceAlphaThreshold, setSliceAlphaThreshold] = useState(1)
+  const [sliceMode, setSliceMode] = useState<'grid' | 'components'>('grid')
+  const [sliceBoundsMode, setSliceBoundsMode] = useState<SpriteBoundsMode>('axis_aligned')
+  const [sliceBackgroundMode, setSliceBackgroundMode] = useState<SpriteBackgroundMode>('auto')
+  const [sliceBackgroundTolerance, setSliceBackgroundTolerance] = useState(36)
+  const [sliceMinArea, setSliceMinArea] = useState(2)
+  const [sliceMergeGap, setSliceMergeGap] = useState(0)
+  const [sliceAnalysis, setSliceAnalysis] = useState<SpriteSheetDetection | null>(null)
+  const [sliceOverlayPreview, setSliceOverlayPreview] = useState<string | null>(null)
+  const [sliceShowOverlay, setSliceShowOverlay] = useState(true)
+  const [slicingSprites, setSlicingSprites] = useState(false)
   const [savedProjectAvailable, setSavedProjectAvailable] = useState(false)
   const [projectBusy, setProjectBusy] = useState(false)
   const [projectMessage, setProjectMessage] = useState<string | null>(null)
@@ -322,6 +349,51 @@ export default function App() {
       return
     }
     pickFile(nextFile)
+  }
+
+  const analyzeStandaloneSpriteSheet = (canvas: HTMLCanvasElement, applyGridSuggestion = false) => {
+    const context = canvas.getContext('2d', { willReadFrequently: true })!
+    const image = context.getImageData(0, 0, canvas.width, canvas.height)
+    const analysis = analyzeSpriteSheet(image.data, canvas.width, canvas.height, {
+      backgroundMode: sliceBackgroundMode,
+      alphaThreshold: sliceAlphaThreshold,
+      backgroundTolerance: sliceBackgroundTolerance,
+      minArea: sliceMinArea,
+      mergeGap: sliceMergeGap,
+    })
+    setSliceAnalysis(analysis)
+    setSliceOverlayPreview(renderSpriteDetectionOverlay(canvas, analysis).toDataURL('image/png'))
+    setSliceBoundsMode(analysis.recommendation.bounds)
+    if (applyGridSuggestion) {
+      setSliceMode(analysis.recommendation.layout)
+      if (analysis.gridCandidate) {
+        setSliceColumns(analysis.gridCandidate.columns)
+        setSliceRows(analysis.gridCandidate.rows)
+        setSliceFrameCount(analysis.gridCandidate.frameCount)
+      }
+    }
+    return analysis
+  }
+
+  const acceptSpriteSheet = async (nextFile: File | null) => {
+    if (!nextFile) return
+    if (!['image/png', 'image/webp', 'application/octet-stream', ''].includes(nextFile.type)
+      || !/\.(png|webp)$/i.test(nextFile.name)) {
+      setError('图集切分目前支持 PNG 或 WebP 图片')
+      return
+    }
+    try {
+      const canvas = await pngBlobToCanvas(nextFile)
+      setSpriteSheetFile(nextFile)
+      setSpriteSheetCanvas(canvas)
+      setSpriteSheetPreview(canvas.toDataURL('image/png'))
+      setSliceShowOverlay(true)
+      const analysis = analyzeStandaloneSpriteSheet(canvas, true)
+      setError(null)
+      setProjectMessage(`已载入图集 ${canvas.width} × ${canvas.height} · 检测到 ${analysis.sprites.length} 个区域，请复核候选`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
   }
 
   const handleDragEnter = (event: ReactDragEvent<HTMLElement>) => {
@@ -535,6 +607,68 @@ export default function App() {
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }
+
+  const downloadIndividualSprites = async () => {
+    try {
+      setSlicingSprites(true)
+      const result = renderExport()
+      const basename = safeFilename(animationName)
+      const slices = sliceSpriteRegions(result.canvas, result.manifest.frames.map((frame) => ({
+        index: frame.index,
+        filename: frame.filename,
+        frame: frame.frame,
+        sourceFrameId: frame.sourceFrameId,
+        sourceOffset: { x: frame.spriteSourceSize.x, y: frame.spriteSourceSize.y },
+        sourceSize: frame.sourceSize,
+        pivot: frame.pivot,
+        duration: frame.duration,
+      })), alphaThreshold)
+      await downloadSpriteSlicesZip(slices, basename, {
+        image: `${basename}.png`,
+        alphaThreshold,
+      })
+      setProjectMessage(`已将 ${slices.length} 张最小 Sprite 打包下载`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      setSlicingSprites(false)
+    }
+  }
+
+  const downloadStandaloneSprites = async () => {
+    if (!spriteSheetCanvas || !spriteSheetFile) return
+    try {
+      setSlicingSprites(true)
+      setError(null)
+      const slices = sliceMode === 'components'
+        ? sliceDetectedSpriteRegions(
+          spriteSheetCanvas,
+          sliceAnalysis ?? analyzeStandaloneSpriteSheet(spriteSheetCanvas),
+          sliceBoundsMode,
+          sliceAlphaThreshold,
+        )
+        : sliceSpriteRegions(spriteSheetCanvas, createGridSliceRegions(
+          spriteSheetCanvas.width,
+          spriteSheetCanvas.height,
+          {
+            columns: sliceColumns,
+            rows: sliceRows,
+            padding: slicePadding,
+            frameCount: sliceFrameCount,
+          },
+        ), sliceAlphaThreshold)
+      const basename = safeFilename(spriteSheetFile.name.replace(/\.[^.]+$/, ''))
+      await downloadSpriteSlicesZip(slices, basename, {
+        image: spriteSheetFile.name,
+        alphaThreshold: sliceAlphaThreshold,
+      })
+      setProjectMessage(`已从图集中切出 ${slices.length} 张最小 Sprite`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      setSlicingSprites(false)
     }
   }
 
@@ -862,7 +996,7 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="帧环工坊首页">
-          <span className="brand-mark">帧</span>
+          <img className="brand-mark" src="/icons/nkg-icon-64.png" alt="" width="34" height="34" />
           <span>帧环<em>工坊</em></span>
         </a>
         <div className="topbar-actions">
@@ -984,6 +1118,134 @@ export default function App() {
               {extracting && <button className="secondary-action" onClick={() => captureAbortRef.current?.abort()}>取消分析</button>}
               <button className="secondary-action demo-action" disabled={extracting} onClick={loadDemo}>载入内置循环演示</button>
               {extracting && <div className="progress"><i style={{ width: `${(progress.current / Math.max(1, progress.total)) * 100}%` }} /></div>}
+            </div>
+            <div className="panel atlas-slicer-panel">
+              <div className="panel-heading"><span>直接切分 Sprite 图集</span><small>无需视频或 Manifest</small></div>
+              <div className="atlas-slicer-layout">
+                <label className="sprite-sheet-drop checkerboard">
+                  <input
+                    type="file"
+                    accept="image/png,image/webp,.png,.webp"
+                    onChange={(event) => {
+                      void acceptSpriteSheet(event.currentTarget.files?.[0] ?? null)
+                      event.currentTarget.value = ''
+                    }}
+                  />
+                  {spriteSheetPreview ? (
+                    <>
+                      <img src={sliceShowOverlay ? (sliceOverlayPreview ?? spriteSheetPreview) : spriteSheetPreview} alt="待切分图集预览" />
+                      <span className="atlas-preview-hint">{sliceShowOverlay ? '候选：绿=水平框 · 蓝=轮廓 · 橙=旋转框 · 黄=网格' : '原图预览'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="upload-icon">＋</span>
+                      <strong>选择规则或不规则 Sprite 图集</strong>
+                      <small>支持 PNG / WebP；候选仅供人工复核，不运行内置 AI</small>
+                    </>
+                  )}
+                </label>
+                <div className="atlas-slicer-controls">
+                  <div className="settings-guide">
+                    <strong>确定性候选 + 人工覆盖</strong>
+                    <p>网页只运行几何检测。Codex / Claude Code 的视觉判断通过 MCP 完成，不在浏览器内加载模型。</p>
+                  </div>
+                  {spriteSheetCanvas && (
+                    <div className="atlas-file-summary">
+                      <span>{spriteSheetFile?.name}</span>
+                      <b>{spriteSheetCanvas.width} × {spriteSheetCanvas.height}</b>
+                    </div>
+                  )}
+                  <div className="export-mode-tabs atlas-mode-tabs" role="group" aria-label="图集切分模式">
+                    <button className={sliceMode === 'grid' ? 'active' : ''} onClick={() => setSliceMode('grid')}>固定网格</button>
+                    <button className={sliceMode === 'components' ? 'active' : ''} onClick={() => setSliceMode('components')}>不规则候选</button>
+                  </div>
+                  {sliceMode === 'grid' ? (
+                    <div className="slice-number-grid">
+                      <label className="field-label">
+                        <span>列数</span>
+                        <input type="number" min="1" max="1000" value={sliceColumns} onChange={(event) => {
+                          const next = Math.max(1, Math.floor(Number(event.target.value) || 1))
+                          setSliceColumns(next)
+                          setSliceFrameCount((current) => Math.min(current, next * sliceRows))
+                        }} />
+                      </label>
+                      <label className="field-label">
+                        <span>行数</span>
+                        <input type="number" min="1" max="1000" value={sliceRows} onChange={(event) => {
+                          const next = Math.max(1, Math.floor(Number(event.target.value) || 1))
+                          setSliceRows(next)
+                          setSliceFrameCount((current) => Math.min(current, sliceColumns * next))
+                        }} />
+                      </label>
+                      <label className="field-label">
+                        <span>格子间距</span>
+                        <input type="number" min="0" max="4096" value={slicePadding} onChange={(event) => setSlicePadding(Math.max(0, Math.floor(Number(event.target.value) || 0)))} />
+                      </label>
+                      <label className="field-label">
+                        <span>实际 Sprite 数</span>
+                        <input type="number" min="1" max={sliceColumns * sliceRows} value={sliceFrameCount} onChange={(event) => setSliceFrameCount(Math.max(1, Math.min(sliceColumns * sliceRows, Math.floor(Number(event.target.value) || 1))))} />
+                      </label>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="slice-number-grid">
+                        <label className="field-label">
+                          <span>背景判断</span>
+                          <select value={sliceBackgroundMode} onChange={(event) => setSliceBackgroundMode(event.target.value as SpriteBackgroundMode)}>
+                            <option value="auto">自动：Alpha / 边缘主色</option>
+                            <option value="alpha">只按 Alpha</option>
+                            <option value="edge-color">按边缘主色</option>
+                          </select>
+                        </label>
+                        <label className="field-label">
+                          <span>边缘颜色容差</span>
+                          <input type="number" min="0" max="441" value={sliceBackgroundTolerance} onChange={(event) => setSliceBackgroundTolerance(Math.max(0, Number(event.target.value) || 0))} />
+                        </label>
+                        <label className="field-label">
+                          <span>最小区域面积</span>
+                          <input type="number" min="1" value={sliceMinArea} onChange={(event) => setSliceMinArea(Math.max(1, Math.floor(Number(event.target.value) || 1)))} />
+                        </label>
+                        <label className="field-label">
+                          <span>部件合并距离</span>
+                          <input type="number" min="0" value={sliceMergeGap} onChange={(event) => setSliceMergeGap(Math.max(0, Number(event.target.value) || 0))} />
+                        </label>
+                        <label className="field-label">
+                          <span>输出边界</span>
+                          <select value={sliceBoundsMode} onChange={(event) => setSliceBoundsMode(event.target.value as SpriteBoundsMode)}>
+                            <option value="axis_aligned">水平最小矩形</option>
+                            <option value="oriented">旋正最小矩形</option>
+                            <option value="polygon">多边形 Mask</option>
+                          </select>
+                        </label>
+                      </div>
+                      {sliceAnalysis && (
+                        <div className="slice-analysis-summary">
+                          <b>{sliceAnalysis.sprites.length} 个候选</b>
+                          <span>启发式：{sliceAnalysis.recommendation.layout === 'grid' ? '规则网格' : '不规则区域'} / {sliceAnalysis.recommendation.bounds}</span>
+                          <p>{sliceAnalysis.recommendation.reasons.join('；')}</p>
+                          {sliceAnalysis.warnings.map((warning) => <small key={warning}>{warning}</small>)}
+                        </div>
+                      )}
+                      <button className="secondary-action compact-action" disabled={!spriteSheetCanvas} onClick={() => {
+                        if (!spriteSheetCanvas) return
+                        const analysis = analyzeStandaloneSpriteSheet(spriteSheetCanvas)
+                        setProjectMessage(`已刷新 ${analysis.sprites.length} 个几何候选，请继续人工复核`)
+                      }}>按当前参数刷新候选</button>
+                    </>
+                  )}
+                  <Control label="透明度裁切阈值" value={String(sliceAlphaThreshold)}>
+                    <input type="range" min="0" max="255" value={sliceAlphaThreshold} onChange={(event) => setSliceAlphaThreshold(Number(event.target.value))} />
+                  </Control>
+                  {spriteSheetPreview && (
+                    <button className="secondary-action compact-action" onClick={() => setSliceShowOverlay((current) => !current)}>
+                      {sliceShowOverlay ? '查看无标注原图' : '查看候选叠加图'}
+                    </button>
+                  )}
+                  <button className="primary-action" disabled={!spriteSheetCanvas || slicingSprites} onClick={() => void downloadStandaloneSprites()}>
+                    {slicingSprites ? '正在切分与打包…' : '切分并下载单 Sprite ZIP'}
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
         )}
@@ -1365,9 +1627,12 @@ export default function App() {
                       )}
                     </>
                   )}
-                  <button className="primary-action" onClick={downloadSprite}>
-                    下载图片与数据文件
-                  </button>
+                  <div className="export-download-actions">
+                    <button className="primary-action" onClick={downloadSprite}>下载图集与数据</button>
+                    <button className="secondary-action" disabled={slicingSprites} onClick={() => void downloadIndividualSprites()}>
+                      {slicingSprites ? '正在切分与打包…' : '下载最小单 Sprite ZIP'}
+                    </button>
+                  </div>
                 </>
               )}
             </div>

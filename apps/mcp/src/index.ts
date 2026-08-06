@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
@@ -12,9 +13,10 @@ import {
   executeActionExportPlan,
   readActionExportPlan,
 } from './export-plans.js'
-import { exportSpriteBundle, validateSpriteBundle } from './sprite-bundle.js'
+import { exportSpriteBundle, sliceSpriteSheet, validateSpriteBundle } from './sprite-bundle.js'
 import { applyAiMatteBatch, applyChromaKeyBatch } from './matting.js'
 import { analyzeMatteQuality, refineMatteBatch } from './matte-refinement.js'
+import { inspectSpriteSheetLayout } from './sprite-layout-inspection.js'
 import {
   createSpriteSheetFile,
   exportVideoFrames,
@@ -26,10 +28,10 @@ import {
   streamImageFeatures,
 } from './video.js'
 
-const server = new McpServer(
+export const server = new McpServer(
   { name: 'frameloop-mcp', version: '0.1.0' },
   {
-    instructions: '先用 inspect_video 获取媒体信息，再用 analyze_video_loop 自动检测多段动作并生成段首闭环与段内周期核心候选。随后调用 review_video_action_segments，让多模态 AI 根据动作概览和六帧接缝选择最早完整闭环。单动作可在确认路径和边界后调用 export_reviewed_action；多动作应先调用 create_action_export_plan 展示完整计划，由用户确认后再调用 export_action_batch。透明背景先使用 apply_chroma_key_batch 或 apply_ai_matte_batch，再用 analyze_matte_quality 定位孤立像素、孔洞和半透明边缘；需要修复时调用 refine_matte_batch，并再次诊断确认。最终用 export_sprite_bundle 合并并用 validate_sprite_bundle 验证。所有路径均为运行 MCP 进程所在机器的本地绝对或相对路径。',
+    instructions: '先用 inspect_video 获取媒体信息，再用 analyze_video_loop 自动检测多段动作并生成段首闭环与段内周期核心候选。随后调用 review_video_action_segments，让多模态 AI 根据动作概览和六帧接缝选择最早完整闭环。单动作可在确认路径和边界后调用 export_reviewed_action；多动作应先调用 create_action_export_plan 展示完整计划，由用户确认后再调用 export_action_batch。透明背景先使用 apply_chroma_key_batch 或 apply_ai_matte_batch，再用 analyze_matte_quality 定位孤立像素、孔洞和半透明边缘；需要修复时调用 refine_matte_batch，并再次诊断确认。最终用 export_sprite_bundle 合并并用 validate_sprite_bundle 验证。对外部图集切图时，先调用 inspect_sprite_sheet_layout 获取原图和候选叠加图，由多模态 AI 选择 grid、components 或 regions，再调用 slice_sprite_sheet 执行。所有路径均为运行 MCP 进程所在机器的本地绝对或相对路径。',
   },
 )
 
@@ -54,6 +56,33 @@ const bundleAnimationSchema = z.object({
   source_frame_ids: z.array(z.number().int().nonnegative()).optional(),
 })
 
+const spritePointSchema = z.object({ x: z.number(), y: z.number() })
+const spriteRegionSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('rect'),
+    name: z.string().min(1).optional(),
+    x: z.number().nonnegative(),
+    y: z.number().nonnegative(),
+    w: z.number().positive(),
+    h: z.number().positive(),
+  }),
+  z.object({
+    type: z.literal('rotated_rect'),
+    name: z.string().min(1).optional(),
+    cx: z.number(),
+    cy: z.number(),
+    w: z.number().positive(),
+    h: z.number().positive(),
+    angle_degrees: z.number().min(-180).max(180),
+  }),
+  z.object({
+    type: z.literal('polygon'),
+    name: z.string().min(1).optional(),
+    points: z.array(spritePointSchema).min(3).max(10000),
+    angle_degrees: z.number().min(-180).max(180).optional(),
+  }),
+])
+
 const matteCorrectionSchema = z.object({
   frame_index: z.number().int().nonnegative().describe('从 0 开始的帧序号'),
   mode: z.enum(['remove', 'restore']).describe('移除背景残点，或从源帧恢复主体像素'),
@@ -64,6 +93,44 @@ const matteCorrectionSchema = z.object({
     y: z.number(),
   })).min(1).max(10000).describe('按顺序连接的笔画点；单点可修正一个像素'),
 })
+
+server.registerTool(
+  'inspect_sprite_sheet_layout',
+  {
+    title: '向多模态 AI 展示图集布局候选',
+    description: '读取外部 Sprite Sheet，返回原图预览、候选叠加图、规则网格与连通区域诊断，供 Codex、Claude Code 等外部多模态 Agent 选择切图模式；本工具不替 AI 作最终决定。',
+    inputSchema: {
+      atlas_path: z.string().min(1),
+      background_mode: z.enum(['auto', 'alpha', 'edge-color']).default('auto'),
+      alpha_threshold: z.number().int().min(0).max(255).default(1),
+      background_tolerance: z.number().min(0).max(441).default(36),
+      min_area: z.number().int().min(1).optional(),
+      merge_gap: z.number().min(0).max(4096).default(0),
+      max_preview_size: z.number().int().min(256).max(4096).default(1600),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  },
+  async ({ atlas_path, background_mode, alpha_threshold, background_tolerance, min_area, merge_gap, max_preview_size }) => {
+    const inspection = await inspectSpriteSheetLayout({
+      atlasPath: atlas_path,
+      detection: {
+        backgroundMode: background_mode,
+        alphaThreshold: alpha_threshold,
+        backgroundTolerance: background_tolerance,
+        minArea: min_area,
+        mergeGap: merge_gap,
+      },
+      maxPreviewSize: max_preview_size,
+    })
+    return {
+      content: [
+        { type: 'text' as const, text: JSON.stringify(inspection.result, null, 2) },
+        { type: 'image' as const, data: inspection.originalPreview.toString('base64'), mimeType: 'image/png' as const },
+        { type: 'image' as const, data: inspection.annotatedPreview.toString('base64'), mimeType: 'image/png' as const },
+      ],
+    }
+  },
+)
 
 server.registerTool(
   'inspect_video',
@@ -635,6 +702,68 @@ server.registerTool(
 )
 
 server.registerTool(
+  'slice_sprite_sheet',
+  {
+    title: '切出独立 Sprite PNG',
+    description: '执行外部多模态 Agent 已确认的切图方案：支持 Manifest、规则网格、连通区域，以及自定义水平矩形、旋转矩形和多边形；输出最小透明 PNG 与可审计清单。建议先调用 inspect_sprite_sheet_layout。',
+    inputSchema: {
+      manifest_path: z.string().min(1).optional().describe('FrameLoop Sprite Manifest 路径；与 atlas_path 二选一'),
+      atlas_path: z.string().min(1).optional().describe('独立图集路径；与 manifest_path 二选一'),
+      output_directory: z.string().min(1).optional().describe('默认输出到 Atlas 同目录下的 <名称>-sprites 文件夹'),
+      columns: z.number().int().min(1).max(1000).optional().describe('无 Manifest 时的网格列数'),
+      rows: z.number().int().min(1).max(1000).optional().describe('无 Manifest 时的网格行数'),
+      padding: z.number().int().min(0).max(4096).default(0).describe('无 Manifest 时相邻网格间距'),
+      frame_count: z.number().int().min(1).optional().describe('无 Manifest 时实际帧数；默认使用全部网格'),
+      mode: z.enum(['grid', 'components', 'regions']).optional().describe('无 Manifest 时的执行模式；不传时根据 regions 或网格参数推断'),
+      bounds: z.enum(['axis_aligned', 'oriented', 'polygon']).default('axis_aligned'),
+      regions: z.array(spriteRegionSchema).min(1).max(2000).optional().describe('regions 模式下由多模态 AI 确认的区域'),
+      background_mode: z.enum(['auto', 'alpha', 'edge-color']).default('auto'),
+      background_tolerance: z.number().min(0).max(441).default(36),
+      min_area: z.number().int().min(1).optional(),
+      merge_gap: z.number().min(0).max(4096).default(0),
+      remove_background: z.boolean().default(true),
+      alpha_threshold: z.number().int().min(0).max(255).optional().describe('默认沿用 Manifest 的透明度阈值'),
+      conflict_policy: z.enum(['fail', 'replace']).default('fail'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  async ({ manifest_path, atlas_path, output_directory, columns, rows, padding, frame_count, mode, bounds, regions, background_mode, background_tolerance, min_area, merge_gap, remove_background, alpha_threshold, conflict_policy }, extra) => {
+    const progress = createProgressReporter(extra)
+    await progress({ progress: 0, total: 1, message: '准备切分 Sprite Sheet', force: true })
+    const result = await sliceSpriteSheet({
+      manifestPath: manifest_path,
+      atlasPath: atlas_path,
+      outputDirectory: output_directory,
+      columns,
+      rows,
+      padding,
+      frameCount: frame_count,
+      mode,
+      boundsMode: bounds,
+      regions: regions?.map((region) => region.type === 'rotated_rect'
+        ? { ...region, angleDegrees: region.angle_degrees }
+        : region.type === 'polygon'
+          ? { ...region, angleDegrees: region.angle_degrees }
+          : region),
+      backgroundMode: background_mode,
+      backgroundTolerance: background_tolerance,
+      minArea: min_area,
+      mergeGap: merge_gap,
+      removeBackground: remove_background,
+      alphaThreshold: alpha_threshold,
+      conflictPolicy: conflict_policy,
+      onProgress: (completed, total, message) => progress({
+        progress: completed,
+        total,
+        message,
+        force: completed === total,
+      }),
+    })
+    return textResult(result)
+  },
+)
+
+server.registerTool(
   'apply_chroma_key_batch',
   {
     title: '批量色度键抠图',
@@ -778,5 +907,7 @@ server.registerTool(
   },
 )
 
-const transport = new StdioServerTransport()
-await server.connect(transport)
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const transport = new StdioServerTransport()
+  await server.connect(transport)
+}

@@ -30,6 +30,7 @@ FrameLoop Studio 会分析周期、自相似、首尾闭合、运动能量、运
 - **浏览器本地 AI 抠图**：按需加载 BEN2 置信度引导 Matting，优先 WebGPU，失败时自动回退 WASM。
 - **逐帧像素精修**：自动抠图后可按帧放大到 1600%，使用最小 1 像素的“移除背景 / 恢复主体”笔刷修补蒙版，并支持前后帧切换、撤销重做和复制到相邻帧。
 - **专业 Sprite Sheet**：支持规则网格和 Tight Trim 紧凑排布、透明边界裁切、Pivot、逐帧时长与动画命名。
+- **独立 Sprite 切图**：支持 Manifest、固定网格、连通区域、旋转最小矩形和多边形 Mask；外部多模态 Agent 可通过 MCP 查看原图与候选叠加图后选择执行模式。
 - **引擎友好导出**：PNG 配套 Generic、Aseprite、Godot 和 Unity 数据预设。
 - **项目恢复**：视频、帧编辑、循环区间、抠图蒙版和导出设置均可保存到 IndexedDB。
 - **AI 自动化接口**：本地 STDIO MCP 可探测视频、分析循环、导出帧和合成 Sprite Sheet，并返回候选接缝图供多模态模型复核。
@@ -51,6 +52,8 @@ npm run dev
 2. 查看自动候选和 A/B 接缝对比，确认或手动微调循环区间。
 3. 选择色度键或本地 AI 抠图，用笔刷修复需要保留/移除的细节。
 4. 选择排布、Pivot、帧时长与目标预设，导出 PNG 和配套数据。
+
+如果已经有一张图集，可直接使用首页的 **直接切分 Sprite 图集**：规则素材填写行列与间距；“华容道”式混排可切到不规则候选，复核水平框、凸包与旋转框后导出。页面只运行确定性几何算法，不加载内置 AI 模型。
 
 没有合适素材时，可以直接点击页面中的 **载入内置 Demo** 体验完整工作流。
 
@@ -137,6 +140,8 @@ Skill 负责流程编排和质量门禁，MCP 负责实际分析与文件生成�
 | `export_action_batch` | 按计划批量导出多个动作，支持失败、跳过和替换冲突策略 | 是 |
 | `export_sprite_bundle` | 将多个动画合并为 Tight/Grid Atlas，并生成 Generic、Aseprite、Godot 或 Unity 数据 | 是 |
 | `validate_sprite_bundle` | 检查 Atlas、Manifest、引擎配套文件、重复末帧、接缝与 Alpha 抖动 | 否 |
+| `inspect_sprite_sheet_layout` | 向外部多模态 Agent 返回原图、候选叠加图、网格/连通域/旋转矩形/凸包诊断 | 否 |
+| `slice_sprite_sheet` | 执行 Agent 确认的 Manifest、网格、连通域、矩形、旋转矩形或多边形切图计划 | 是 |
 | `apply_chroma_key_batch` | 批量色度键、三帧时序稳定与边缘去色溢出 | 是 |
 | `apply_ai_matte_batch` | 使用本地 BEN2/Transformers.js 批量生成透明 PNG | 是 |
 | `analyze_matte_quality` | 诊断孤立背景残点、主体孔洞和半透明边缘，返回逐帧坐标 | 否 |
@@ -152,6 +157,7 @@ Skill 负责流程编排和质量门禁，MCP 负责实际分析与文件生成�
 4. 单个动作可调用 `export_reviewed_action`；多个动作先调用 `create_action_export_plan`，确认计划后再调用 `export_action_batch`。
 5. 需要透明背景时调用 `apply_chroma_key_batch` 或 `apply_ai_matte_batch`，再用 `analyze_matte_quality` 定位背景残点和主体孔洞。
 6. AI 根据诊断坐标调用 `refine_matte_batch` 精确移除或恢复像素；自动清理默认关闭，需明确设置面积阈值才会启用。精修后再次诊断，确认无误再使用 `export_sprite_bundle` 合并多动画 Atlas，并用 `validate_sprite_bundle` 做闭环校验。
+7. 交付还需要逐张最小 PNG 时：已有 Manifest 可直接调用 `slice_sprite_sheet`；只有外部图集时，先调用 `inspect_sprite_sheet_layout`，让 Codex、Claude Code 等多模态 Agent 观察原图和标注图，再选择 `grid`、`components` 或自定义 `regions` 调用 `slice_sprite_sheet`。`regions` 支持 `rect`、`rotated_rect` 和 `polygon`。
 
 ## 循环评分是怎样工作的
 
