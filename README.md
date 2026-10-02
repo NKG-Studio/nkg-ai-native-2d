@@ -1,5 +1,9 @@
 <div align="center">
 
+<p align="center">
+  <img src="docs/assets/nkg-icon-master.png" alt="FrameLoop Studio · AS" width="360" />
+</p>
+
 # FrameLoop Studio
 
 **让 2D 动画自己找到完美循环。**
